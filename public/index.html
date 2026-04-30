@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Concession Requests — iPROMOTEu</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="/style.css"/>
+</head>
+<body>
+<div class="shell">
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <img src="/logo.png" alt="iPROMOTEu"/>
+      <div class="app-label">Concession Requests</div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section-label">Forms</div>
+      <div id="staff-nav-items"></div>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="mode-chip">
+        <span class="mode-chip-label">Staff mode</span>
+        <a href="/admin" class="mode-chip-action">Admin</a>
+      </div>
+    </div>
+  </aside>
+
+  <main class="content">
+    <!-- Form list -->
+    <div id="view-list">
+      <div class="page-header">
+        <h2>Submit a request</h2>
+        <p>Select the type of concession you'd like to request.</p>
+        <div class="yellow-rule"></div>
+      </div>
+      <div class="form-grid" id="form-grid"></div>
+    </div>
+
+    <!-- Fill form -->
+    <div id="view-fill" style="display:none">
+      <div style="display:flex;align-items:center;gap:14px;margin-bottom:26px;padding-bottom:20px;border-bottom:1px solid var(--border)">
+        <button class="btn btn-sm" onclick="showList()">← Back</button>
+        <div><h2 id="fill-title" style="font-size:18px;font-weight:600"></h2><p style="font-size:13px;color:var(--text2)">Fill out all required fields and submit.</p></div>
+      </div>
+      <div class="card" id="fill-container"></div>
+    </div>
+
+    <!-- Success -->
+    <div id="view-success" style="display:none">
+      <div style="max-width:480px;margin:60px auto;text-align:center">
+        <div style="width:56px;height:56px;background:var(--success-bg);border:1px solid var(--success-border);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 20px">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>
+        </div>
+        <h2 style="font-size:20px;font-weight:600;margin-bottom:8px">Request submitted</h2>
+        <p style="font-size:14px;color:var(--text2);margin-bottom:24px">Your request has been sent to the approver. You'll receive an email when a decision is made.</p>
+        <div id="email-warning"></div>
+        <button class="btn btn-yellow" onclick="showList()">Submit another request</button>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+const TILE_ICONS = {
+  'txn-fee':     `<svg viewBox="0 0 16 16" fill="none" stroke="#231f20" stroke-width="1.4"><rect x="1" y="3" width="14" height="10" rx="1.5"/><path d="M1 7h14M5 10h2"/></svg>`,
+  'late-fee':    `<svg viewBox="0 0 16 16" fill="none" stroke="#231f20" stroke-width="1.4"><circle cx="8" cy="8" r="6"/><path d="M8 5v3.5l2 1.5"/></svg>`,
+  'invoice-fee': `<svg viewBox="0 0 16 16" fill="none" stroke="#231f20" stroke-width="1.4"><path d="M4 1h6l3 3v11H4V1z"/><path d="M10 1v3h3M6 7h4M6 10h4"/></svg>`,
+  's-fee':       `<svg viewBox="0 0 16 16" fill="none" stroke="#231f20" stroke-width="1.4"><circle cx="8" cy="8" r="6"/><path d="M6 9.5c0 .8 1 1.5 2 1.5s2-.7 2-1.5-1-1.5-2-1.5S6 7.2 6 6.5C6 5.7 7 5 8 5s2 .7 2 1.5M8 3.5v1M8 11.5v1"/></svg>`,
+  'ldi':         `<svg viewBox="0 0 16 16" fill="none" stroke="#231f20" stroke-width="1.4"><path d="M8 1l6 3v5c0 3-3 5-6 6C5 14 2 12 2 9V4l6-3z"/></svg>`,
+};
+function getTileIcon(id) {
+  return TILE_ICONS[id] || `<svg viewBox="0 0 16 16" fill="none" stroke="#231f20" stroke-width="1.4"><rect x="2" y="2" width="12" height="12" rx="1.5"/><path d="M5 8h6M5 5h4M5 11h3"/></svg>`;
+}
+
+let forms = [];
+let activeForm = null;
+
+async function init() {
+  const res = await fetch('/api/forms');
+  forms = await res.json();
+  renderNav();
+  renderGrid();
+}
+
+function renderNav() {
+  const nav = document.getElementById('staff-nav-items');
+  nav.innerHTML = forms.map(f => `
+    <button class="nav-item" onclick="openForm('${f.id}')" id="nav-${f.id}">
+      <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="rgba(255,255,255,0.6)" stroke-width="1.4"><rect x="2" y="2" width="12" height="12" rx="1.5"/><path d="M5 8h6M5 5h4M5 11h3"/></svg>
+      ${f.name}
+    </button>`).join('');
+}
+
+function renderGrid() {
+  document.getElementById('form-grid').innerHTML = forms.map(f => `
+    <div class="form-tile" onclick="openForm('${f.id}')">
+      <div class="tile-icon">${getTileIcon(f.id)}</div>
+      <div class="tile-badge ${f.is_builtin ? 'builtin' : 'custom'}">${f.is_builtin ? 'Built-in' : 'Custom'}</div>
+      <div class="tile-name">${f.name}</div>
+    </div>`).join('');
+}
+
+function showList() {
+  document.getElementById('view-list').style.display = 'block';
+  document.getElementById('view-fill').style.display = 'none';
+  document.getElementById('view-success').style.display = 'none';
+  document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+}
+
+function openForm(id) {
+  activeForm = forms.find(f => f.id === id);
+  if (!activeForm) return;
+  document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+  const navBtn = document.getElementById('nav-' + id);
+  if (navBtn) navBtn.classList.add('active');
+  document.getElementById('fill-title').textContent = activeForm.name;
+  renderFillForm(activeForm);
+  document.getElementById('view-list').style.display = 'none';
+  document.getElementById('view-fill').style.display = 'block';
+  document.getElementById('view-success').style.display = 'none';
+}
+
+function renderFillForm(f) {
+  let html = `<div class="section-divider">Requester information</div>
+    <div class="row2">
+      <div class="field"><label>Your name *</label><input type="text" id="rf-name" placeholder="Full name"/></div>
+      <div class="field"><label>Your email *</label><input type="email" id="rf-email" placeholder="you@ipromoteu.com"/></div>
+    </div>
+    <div class="row2">
+      <div class="field"><label>Department *</label><input type="text" id="rf-dept" placeholder="e.g. Sales"/></div>
+      <div class="field"><label>Affiliate code *</label><input type="text" id="rf-affiliate" placeholder="e.g. ABC123"/></div>
+    </div>
+    <div class="section-divider">Request details</div>`;
+
+  f.fields.forEach(field => {
+    const req = field.required ? ' *' : '';
+    if (field.type === 'textarea') {
+      html += `<div class="field"><label>${field.label}${req}</label><textarea id="rf-${field.id}"></textarea></div>`;
+    } else {
+      html += `<div class="field"><label>${field.label}${req}</label><input type="${field.type}" id="rf-${field.id}"/></div>`;
+    }
+  });
+
+  html += `<div class="section-divider">Additional notes</div>
+    <div class="field"><label>Notes (optional)</label><textarea id="rf-notes" rows="2" placeholder="Any additional context..."></textarea></div>
+    <div style="display:flex;gap:10px;margin-top:6px">
+      <button class="btn btn-yellow" onclick="submitForm()">Submit request</button>
+      <button class="btn" onclick="showList()">Cancel</button>
+    </div>
+    <div id="rf-msg"></div>`;
+
+  document.getElementById('fill-container').innerHTML = html;
+}
+
+async function submitForm() {
+  const f = activeForm;
+  const name      = document.getElementById('rf-name').value.trim();
+  const email     = document.getElementById('rf-email').value.trim();
+  const dept      = document.getElementById('rf-dept').value.trim();
+  const affiliate = document.getElementById('rf-affiliate').value.trim();
+  const msg       = document.getElementById('rf-msg');
+
+  if (!name || !email || !dept || !affiliate) {
+    msg.innerHTML = '<div class="alert alert-danger">Please fill in all requester fields.</div>'; return;
+  }
+  for (const field of f.fields) {
+    if (field.required && !document.getElementById('rf-' + field.id).value.trim()) {
+      msg.innerHTML = `<div class="alert alert-danger">Please fill in: ${field.label}</div>`; return;
+    }
+  }
+
+  const fields = {};
+  f.fields.forEach(field => {
+    fields[field.id] = { label: field.label, value: document.getElementById('rf-' + field.id).value.trim() };
+  });
+
+  msg.innerHTML = '<div class="alert alert-warn">Submitting...</div>';
+
+  const res = await fetch('/api/submissions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ formId: f.id, name, email, department: dept, affiliateCode: affiliate, fields, notes: document.getElementById('rf-notes').value.trim() })
+  });
+  const data = await res.json();
+
+  if (!res.ok) {
+    msg.innerHTML = `<div class="alert alert-danger">${data.error || 'Submission failed. Please try again.'}</div>`; return;
+  }
+
+  document.getElementById('view-fill').style.display = 'none';
+  document.getElementById('view-success').style.display = 'block';
+  if (data.emailWarning) {
+    document.getElementById('email-warning').innerHTML = `<div class="alert alert-warn" style="margin-bottom:16px">${data.emailWarning}</div>`;
+  }
+}
+
+init();
+</script>
+</body>
+</html>

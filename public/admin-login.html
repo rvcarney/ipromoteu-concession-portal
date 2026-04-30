@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Admin Login — iPROMOTEu</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="/style.css"/>
+<style>
+  body { display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+  .login-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 44px 40px; width: 360px; box-shadow: var(--shadow-md); text-align: center; }
+  .pin-divider { width: 40px; height: 2px; background: var(--yellow); border-radius: 2px; margin: 18px auto; }
+</style>
+</head>
+<body>
+<div class="login-card">
+  <img src="/logo.png" alt="iPROMOTEu" style="height:28px;margin-bottom:24px"/>
+  <div class="pin-divider"></div>
+  <h1 style="font-size:19px;font-weight:600;margin-bottom:6px">Admin login</h1>
+  <p style="font-size:13px;color:var(--text2);margin-bottom:24px">Enter your admin PIN to access settings and metrics.</p>
+  <div style="display:flex;gap:8px;margin-bottom:8px">
+    <input type="password" id="pin-input" placeholder="Admin PIN" style="flex:1" onkeydown="if(event.key==='Enter')login()"/>
+    <button class="btn btn-primary" onclick="login()">Enter</button>
+  </div>
+  <p id="pin-err" style="font-size:12px;color:var(--danger);min-height:18px;margin-bottom:12px"></p>
+  <a href="/" style="font-size:13px;color:var(--text2)">← Back to staff portal</a>
+</div>
+<script>
+async function login() {
+  const pin = document.getElementById('pin-input').value;
+  const res = await fetch('/api/auth/login', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ pin })
+  });
+  if (res.ok) {
+    window.location.href = '/admin/dashboard';
+  } else {
+    document.getElementById('pin-err').textContent = 'Incorrect PIN. Try again.';
+    document.getElementById('pin-input').value = '';
+    document.getElementById('pin-input').focus();
+  }
+}
+</script>
+</body>
+</html>

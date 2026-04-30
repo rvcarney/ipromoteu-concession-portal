@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Review Request — iPROMOTEu</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="/style.css"/>
+<style>
+  body { display: flex; align-items: flex-start; justify-content: center; min-height: 100vh; padding: 48px 20px; }
+  .review-wrap { width: 100%; max-width: 560px; }
+  .review-header { text-align: center; margin-bottom: 32px; }
+  .review-header img { height: 28px; margin-bottom: 20px; }
+  .field-pair { display: flex; padding: 9px 0; border-bottom: 1px solid var(--border); font-size: 14px; }
+  .field-pair:last-child { border-bottom: none; }
+  .fp-label { flex: 0 0 160px; color: var(--text2); }
+  .fp-value { color: var(--text); font-weight: 500; }
+  .action-row { display: flex; gap: 12px; margin-top: 24px; }
+  .action-row .btn { flex: 1; justify-content: center; padding: 12px; font-size: 14px; }
+  .decided-banner { text-align: center; padding: 24px; border-radius: var(--radius); margin-bottom: 24px; border: 1px solid; }
+  .decided-banner.APPROVED { background: var(--success-bg); border-color: var(--success-border); color: var(--success); }
+  .decided-banner.DENIED   { background: var(--danger-bg);  border-color: var(--danger-border);  color: var(--danger); }
+  .decided-banner .db-icon { font-size: 32px; margin-bottom: 8px; }
+  .decided-banner .db-title { font-size: 18px; font-weight: 600; margin-bottom: 4px; }
+  .decided-banner .db-sub   { font-size: 13px; opacity: 0.8; }
+  .confirm-panel { display: none; }
+  .confirm-panel.open { display: block; }
+</style>
+</head>
+<body>
+<div class="review-wrap">
+  <div class="review-header">
+    <img src="/logo.png" alt="iPROMOTEu"/>
+    <div style="font-size:10px;font-weight:500;letter-spacing:0.12em;text-transform:uppercase;color:var(--text3)">Concession Requests</div>
+  </div>
+
+  <div id="loading" style="text-align:center;padding:60px 0">
+    <div class="spinner"></div>
+    <p style="font-size:13px;color:var(--text3);margin-top:12px">Loading request...</p>
+  </div>
+
+  <div id="error-view" style="display:none">
+    <div class="card" style="text-align:center;padding:40px">
+      <p style="font-size:18px;font-weight:600;margin-bottom:8px">Request not found</p>
+      <p style="font-size:14px;color:var(--text2)">This approval link may have expired or already been used.</p>
+    </div>
+  </div>
+
+  <div id="main-view" style="display:none">
+    <div id="decided-banner" style="display:none"></div>
+
+    <div class="card" style="margin-bottom:16px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+        <div>
+          <h2 id="form-name" style="font-size:18px;font-weight:600"></h2>
+          <p id="submitted-at" style="font-size:13px;color:var(--text2);margin-top:3px"></p>
+        </div>
+        <span id="decision-badge" class="decision-badge PENDING">Pending</span>
+      </div>
+
+      <div class="section-divider" style="margin-top:0">Requester</div>
+      <div id="requester-fields"></div>
+
+      <div class="section-divider">Request details</div>
+      <div id="request-fields"></div>
+
+      <div id="notes-section" style="display:none">
+        <div class="section-divider">Additional notes</div>
+        <div id="notes-fields"></div>
+      </div>
+
+      <div id="decision-section" style="display:none">
+        <div class="section-divider">Decision</div>
+        <div id="decision-fields"></div>
+      </div>
+    </div>
+
+    <!-- Action buttons — only shown when pending -->
+    <div id="action-buttons" style="display:none">
+      <div class="action-row">
+        <button class="btn btn-success" onclick="showConfirm('APPROVED')">Approve request</button>
+        <button class="btn btn-danger-solid" onclick="showConfirm('DENIED')">Deny request</button>
+      </div>
+    </div>
+
+    <!-- Confirm panel -->
+    <div class="card confirm-panel" id="confirm-panel" style="margin-top:16px">
+      <h3 id="confirm-title" style="font-size:15px;font-weight:600;margin-bottom:4px"></h3>
+      <p id="confirm-sub" style="font-size:13px;color:var(--text2);margin-bottom:16px"></p>
+      <div class="field">
+        <label>Your name *</label>
+        <input type="text" id="approver-name" placeholder="Enter your full name"/>
+      </div>
+      <div class="field">
+        <label>Your email (optional)</label>
+        <input type="email" id="approver-email" placeholder="you@ipromoteu.com"/>
+      </div>
+      <div class="field">
+        <label id="notes-label">Notes / reason</label>
+        <textarea id="approver-notes" rows="3" placeholder="Add any context for your decision..."></textarea>
+      </div>
+      <div style="display:flex;gap:10px">
+        <button class="btn btn-yellow" id="confirm-btn" onclick="submitDecision()">Confirm</button>
+        <button class="btn" onclick="hideConfirm()">Cancel</button>
+      </div>
+      <div id="confirm-msg"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+let token = null;
+let pendingDecision = null;
+let submissionData = null;
+
+async function init() {
+  token = window.location.pathname.split('/review/')[1];
+  const action = new URLSearchParams(window.location.search).get('action');
+
+  const res = await fetch(`/api/review/${token}`);
+  if (!res.ok) {
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('error-view').style.display = 'block';
+    return;
+  }
+
+  const { submission, form } = await res.json();
+  submissionData = submission;
+
+  document.getElementById('loading').style.display = 'none';
+  document.getElementById('main-view').style.display = 'block';
+
+  // Form name + date
+  document.getElementById('form-name').textContent = submission.form_name;
+  document.getElementById('submitted-at').textContent = 'Submitted ' + new Date(submission.submitted_at).toLocaleString('en-US', { dateStyle: 'long', timeStyle: 'short' });
+
+  // Requester fields
+  document.getElementById('requester-fields').innerHTML = [
+    ['Name',           submission.requester_name],
+    ['Email',          submission.requester_email],
+    ['Department',     submission.department],
+    ['Affiliate code', submission.affiliate_code],
+  ].map(([l, v]) => `<div class="field-pair"><div class="fp-label">${l}</div><div class="fp-value">${v || '—'}</div></div>`).join('');
+
+  // Request fields
+  const fields = JSON.parse(submission.fields_json);
+  document.getElementById('request-fields').innerHTML = form.fields.map(f =>
+    `<div class="field-pair"><div class="fp-label">${f.label}</div><div class="fp-value">${fields[f.id]?.value || '—'}</div></div>`
+  ).join('');
+
+  // Notes
+  if (submission.notes) {
+    document.getElementById('notes-section').style.display = 'block';
+    document.getElementById('notes-fields').innerHTML = `<div class="field-pair"><div class="fp-label">Notes</div><div class="fp-value">${submission.notes}</div></div>`;
+  }
+
+  // Decision state
+  const badge = document.getElementById('decision-badge');
+  badge.textContent = submission.decision;
+  badge.className = 'decision-badge ' + submission.decision;
+
+  if (submission.decision !== 'PENDING') {
+    // Show decided banner
+    const approved = submission.decision === 'APPROVED';
+    document.getElementById('decided-banner').style.display = 'block';
+    document.getElementById('decided-banner').innerHTML = `
+      <div class="decided-banner ${submission.decision}">
+        <div class="db-icon">${approved ? '✓' : '✕'}</div>
+        <div class="db-title">This request was ${submission.decision.toLowerCase()}</div>
+        <div class="db-sub">By ${submission.approver_name || 'unknown'} on ${new Date(submission.decided_at).toLocaleString('en-US', { dateStyle: 'long', timeStyle: 'short' })}</div>
+      </div>`;
+
+    document.getElementById('decision-section').style.display = 'block';
+    document.getElementById('decision-fields').innerHTML = [
+      ['Decision',  submission.decision],
+      ['Approver',  submission.approver_name  || '—'],
+      ['Notes',     submission.approver_notes || '—'],
+    ].map(([l, v]) => `<div class="field-pair"><div class="fp-label">${l}</div><div class="fp-value">${v}</div></div>`).join('');
+  } else {
+    // Show action buttons
+    document.getElementById('action-buttons').style.display = 'block';
+    // Auto-open confirm if action param is set
+    if (action === 'approve') showConfirm('APPROVED');
+    if (action === 'deny')    showConfirm('DENIED');
+  }
+}
+
+function showConfirm(decision) {
+  pendingDecision = decision;
+  const approved = decision === 'APPROVED';
+  document.getElementById('confirm-title').textContent = approved ? 'Approve this request' : 'Deny this request';
+  document.getElementById('confirm-sub').textContent   = approved
+    ? 'Please enter your name to confirm approval. The requester will be notified.'
+    : 'Please enter your name and a reason for denying this request. The requester will be notified.';
+  document.getElementById('notes-label').textContent = approved ? 'Notes (optional)' : 'Reason for denial *';
+  document.getElementById('confirm-btn').className = approved ? 'btn btn-success' : 'btn btn-danger-solid';
+  document.getElementById('confirm-btn').textContent = approved ? 'Confirm approval' : 'Confirm denial';
+  document.getElementById('confirm-panel').classList.add('open');
+  document.getElementById('approver-name').focus();
+}
+
+function hideConfirm() {
+  pendingDecision = null;
+  document.getElementById('confirm-panel').classList.remove('open');
+  document.getElementById('confirm-msg').innerHTML = '';
+}
+
+async function submitDecision() {
+  const approverName  = document.getElementById('approver-name').value.trim();
+  const approverEmail = document.getElementById('approver-email').value.trim();
+  const approverNotes = document.getElementById('approver-notes').value.trim();
+  const msg           = document.getElementById('confirm-msg');
+
+  if (!approverName) {
+    msg.innerHTML = '<div class="alert alert-danger" style="margin-top:12px">Please enter your name.</div>'; return;
+  }
+  if (pendingDecision === 'DENIED' && !approverNotes) {
+    msg.innerHTML = '<div class="alert alert-danger" style="margin-top:12px">Please provide a reason for the denial.</div>'; return;
+  }
+
+  document.getElementById('confirm-btn').disabled = true;
+  document.getElementById('confirm-btn').textContent = 'Saving...';
+
+  const res = await fetch(`/api/review/${token}/decide`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ decision: pendingDecision, approverName, approverEmail, approverNotes })
+  });
+  const data = await res.json();
+
+  if (!res.ok) {
+    if (res.status === 409) {
+      msg.innerHTML = `<div class="alert alert-warn" style="margin-top:12px">This request was already ${data.decision.toLowerCase()} by someone else.</div>`;
+    } else {
+      msg.innerHTML = `<div class="alert alert-danger" style="margin-top:12px">${data.error || 'Something went wrong.'}</div>`;
+    }
+    document.getElementById('confirm-btn').disabled = false;
+    document.getElementById('confirm-btn').textContent = 'Confirm';
+    return;
+  }
+
+  // Reload page to show updated state
+  window.location.reload();
+}
+
+init();
+</script>
+</body>
+</html>
