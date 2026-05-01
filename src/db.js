@@ -68,6 +68,7 @@ if (formCount === 0) {
     { id: 'invoice-fee', name: 'Waive invoice fee',               is_builtin: 1, fields_json: JSON.stringify([{ id:'invoice', label:'Invoice number', type:'text', required:true },{ id:'amount', label:'Invoice fee amount ($)', type:'number', required:true },{ id:'reason', label:'Reason for request', type:'textarea', required:true }]) },
     { id: 's-fee',       name: 'Waive S Fee',                     is_builtin: 1, fields_json: JSON.stringify([{ id:'order', label:'Order number', type:'text', required:true },{ id:'amount', label:'S Fee amount ($)', type:'number', required:true },{ id:'reason', label:'Reason for request', type:'textarea', required:true }]) },
     { id: 'ldi',         name: 'Waive loss & damage insurance',   is_builtin: 1, fields_json: JSON.stringify([{ id:'order', label:'Order number', type:'text', required:true },{ id:'amount', label:'LDI amount ($)', type:'number', required:true },{ id:'reason', label:'Reason for request', type:'textarea', required:true }]) },
+    { id: 'cc-fee',      name: 'Waive credit card fee',            is_builtin: 1, fields_json: JSON.stringify([{ id:'invoice', label:'Invoice number', type:'text', required:true },{ id:'amount', label:'Credit card fee amount ($)', type:'number', required:true },{ id:'reason', label:'Reason for request', type:'textarea', required:true }]) },
   ].forEach(f => insert.run(f));
 }
 
@@ -75,7 +76,7 @@ if (formCount === 0) {
 const deptCount = db.prepare('SELECT COUNT(*) as c FROM departments').get().c;
 if (deptCount === 0) {
   const insertDept = db.prepare('INSERT INTO departments (name, sort_order) VALUES (?, ?)');
-  ['Operations','Sales','Finance','Marketing','Customer Service','Technology','Human Resources'].forEach((d, i) => insertDept.run(d, i));
+  ['Operations','Marketing','Technology','Human Resources','Affiliate Services','Invoicing','Accounts Receivable','Accounts Payable','Corporate Accounting','Training and Onboarding'].forEach((d, i) => insertDept.run(d, i));
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -202,7 +203,10 @@ module.exports = {
     const byStaff     = db.prepare(`SELECT requester_name, requester_email, COUNT(*) as count FROM submissions WHERE 1=1 ${scope} GROUP BY requester_email ORDER BY count DESC LIMIT 10`).all(...p);
     const byDept      = db.prepare(`SELECT department, COUNT(*) as count FROM submissions WHERE 1=1 ${scope} GROUP BY department ORDER BY count DESC`).all(...p);
     const byApprover  = db.prepare(`SELECT approver_name, COUNT(*) as count FROM submissions WHERE approver_name != '' ${scope} GROUP BY approver_name ORDER BY count DESC`).all(...p);
-    return { total, approved, denied, pending, thisMonth, byType, byAffiliate, byStaff, byDept, byApprover };
+    const byMonth = db.prepare(`SELECT strftime('%Y-%m', submitted_at) as month, COUNT(*) as count FROM submissions WHERE 1=1 ${scope} GROUP BY month ORDER BY month DESC LIMIT 24`).all(...p);
+    const byYear  = db.prepare(`SELECT strftime('%Y', submitted_at) as year, COUNT(*) as count FROM submissions WHERE 1=1 ${scope} GROUP BY year ORDER BY year DESC`).all(...p);
+    const affiliateDetail = db.prepare(`SELECT affiliate_code, form_name, COUNT(*) as count, SUM(CASE WHEN decision='APPROVED' THEN 1 ELSE 0 END) as approved, SUM(CASE WHEN decision='DENIED' THEN 1 ELSE 0 END) as denied, SUM(CASE WHEN decision='PENDING' THEN 1 ELSE 0 END) as pending FROM submissions WHERE 1=1 ${scope} GROUP BY affiliate_code, form_name ORDER BY affiliate_code, count DESC`).all(...p);
+    return { total, approved, denied, pending, thisMonth, byType, byAffiliate, byStaff, byDept, byApprover, byMonth, byYear, affiliateDetail };
   },
 
   // ── Settings ───────────────────────────────────────────────────────────────
