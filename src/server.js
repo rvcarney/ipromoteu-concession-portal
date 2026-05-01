@@ -32,7 +32,7 @@ function sendPage(res, page) {
 
 // ── Page routes ───────────────────────────────────────────────────────────────
 app.get('/',                      (req, res) => sendPage(res, 'landing'));
-app.get('/staff',                 (req, res) => sendPage(res, 'index'));
+app.get('/staff', (req, res) => sendPage(res, 'staff'));
 app.get('/approve',               (req, res) => sendPage(res, 'approver-login'));
 app.get('/approve/dashboard',     (req, res) => sendPage(res, 'approver'));
 app.get('/approve/review/:token', (req, res) => sendPage(res, 'approver'));
