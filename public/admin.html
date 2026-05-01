@@ -25,10 +25,6 @@
         Submissions
       </button>
       <div class="nav-section-label" style="margin-top:8px">Settings</div>
-      <button class="nav-item" onclick="showTab('settings',this)">
-        <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="rgba(255,255,255,0.6)" stroke-width="1.4"><path d="M2 4h12M2 8h12M2 12h7"/><circle cx="12" cy="12" r="3"/></svg>
-        Email routing
-      </button>
       <button class="nav-item" onclick="showTab('forms',this)">
         <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="rgba(255,255,255,0.6)" stroke-width="1.4"><path d="M8 3v10M3 8h10"/></svg>
         Manage forms
@@ -121,28 +117,6 @@
       </div>
     </div>
 
-    <!-- Settings -->
-    <div id="tab-settings" style="display:none">
-      <div class="page-header">
-        <h2>Email routing</h2>
-        <p>Set the approver email for each form. When a request is submitted, the approver receives a notification with a link to review it in the portal.</p>
-        <div class="yellow-rule"></div>
-      </div>
-      <div class="card" style="margin-bottom:16px">
-        <div class="section-divider" style="margin-top:0">SMTP status</div>
-        <p style="font-size:13px;color:var(--text2);margin-bottom:14px">Test whether your email configuration is working correctly.</p>
-        <button class="btn btn-sm" onclick="testEmail()">Test email connection</button>
-        <span id="smtp-msg" style="font-size:13px;margin-left:10px"></span>
-      </div>
-      <div class="card">
-        <div class="section-divider" style="margin-top:0">Approver email per form</div>
-        <p style="font-size:13px;color:var(--text2);margin-bottom:16px">Submissions for each form will be routed to the email address set here. The approver receives a notification with a direct link to review and decide.</p>
-        <div id="routing-list"></div>
-        <button class="btn btn-primary btn-sm" style="margin-top:4px" onclick="saveRouting()">Save all</button>
-        <span id="routing-msg" style="font-size:13px;margin-left:10px;color:var(--success)"></span>
-      </div>
-    </div>
-
     <!-- Forms -->
     <div id="tab-forms" style="display:none">
       <div class="page-header">
@@ -156,10 +130,7 @@
       </div>
       <div class="card">
         <div class="section-divider" style="margin-top:0">Create a new form</div>
-        <div class="row2">
-          <div class="field"><label>Form name *</label><input type="text" id="nf-name" placeholder="e.g. Waive setup fee"/></div>
-          <div class="field"><label>Approver email</label><input type="email" id="nf-email" placeholder="approver@ipromoteu.com"/></div>
-        </div>
+        <div class="field"><label>Form name *</label><input type="text" id="nf-name" placeholder="e.g. Waive setup fee"/></div>
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
           <div class="section-divider" style="flex:1;margin-right:16px;margin-bottom:0">Custom fields</div>
           <button class="btn btn-sm" onclick="addField()">+ Add field</button>
@@ -182,18 +153,15 @@ async function init() {
   const auth = await fetch('/api/auth/status');
   const { isAdmin } = await auth.json();
   if (!isAdmin) { window.location.href = '/admin/login'; return; }
-
   forms = await (await fetch('/api/forms')).json();
-
   const path = window.location.pathname;
   if      (path.includes('submissions')) showTab('submissions', null);
-  else if (path.includes('settings'))    showTab('settings', null);
   else if (path.includes('forms'))       showTab('forms', null);
   else                                   showTab('dashboard', null);
 }
 
 function showTab(tab, btn) {
-  ['dashboard','submissions','settings','forms'].forEach(t => {
+  ['dashboard','submissions','forms'].forEach(t => {
     document.getElementById('tab-' + t).style.display = 'none';
   });
   document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
@@ -207,7 +175,6 @@ function showTab(tab, btn) {
   history.replaceState({}, '', '/admin/' + tab);
   if (tab === 'dashboard')   loadDashboard();
   if (tab === 'submissions') { populateFormFilter(); loadSubmissions(); }
-  if (tab === 'settings')    loadSettings();
   if (tab === 'forms')       renderForms();
 }
 
@@ -246,7 +213,7 @@ async function loadDashboard() {
           <div style="font-size:13px;font-weight:500">${s.requester_name}</div>
           <div style="font-size:11px;color:var(--text3)">${s.form_name} · ${s.affiliate_code} · ${new Date(s.submitted_at).toLocaleDateString()}</div>
         </div>
-        <span class="decision-badge PENDING">Pending</span>
+        <a href="/review/${s.decision_token}" target="_blank" class="btn btn-sm btn-yellow">Review</a>
       </div>`).join('');
   }
 }
@@ -297,54 +264,13 @@ async function loadSubmissions() {
       <td>${s.department}</td>
       <td>${s.affiliate_code}</td>
       <td><span class="decision-badge ${s.decision}">${s.decision}</span></td>
-      <td>${s.approver_name || '—'}${s.approver_notes ? `<br><span style="font-size:11px;color:var(--text3)">${s.approver_notes}</span>` : ''}</td>
+      <td>
+        ${s.decision === 'PENDING'
+          ? `<a href="/review/${s.decision_token}" target="_blank" class="btn btn-sm btn-yellow">Review</a>`
+          : `${s.approver_name || '—'}${s.approver_notes ? `<br><span style="font-size:11px;color:var(--text3)">${s.approver_notes}</span>` : ''}`
+        }
+      </td>
     </tr>`).join('');
-}
-
-// ── Settings ──────────────────────────────────────────────────────────────────
-async function loadSettings() {
-  const routingList = document.getElementById('routing-list');
-  routingList.innerHTML = forms.map(f => `
-    <div class="config-row">
-      <div class="config-name">
-        <div class="cn">${f.name}</div>
-        <div class="ct ${f.is_builtin ? '' : 'custom'}">${f.is_builtin ? 'built-in' : 'custom'}</div>
-      </div>
-      <input type="email" data-id="${f.id}" value="${f.recipient_email || ''}" placeholder="approver@ipromoteu.com" style="flex:1"/>
-    </div>`).join('') + '<div style="height:4px"></div>';
-}
-
-async function testEmail() {
-  const msg = document.getElementById('smtp-msg');
-  msg.style.color = 'var(--text3)';
-  msg.textContent = 'Testing...';
-  try {
-    const res = await fetch('/api/admin/test-email');
-    const data = await res.json();
-    if (res.ok) {
-      msg.style.color = 'var(--success)';
-      msg.textContent = 'Connection successful — SMTP is configured correctly.';
-    } else {
-      msg.style.color = 'var(--danger)';
-      msg.textContent = 'Failed: ' + data.error;
-    }
-  } catch (e) {
-    msg.style.color = 'var(--danger)';
-    msg.textContent = 'Could not reach server.';
-  }
-}
-
-async function saveRouting() {
-  const inputs = document.querySelectorAll('#routing-list input[data-id]');
-  await Promise.all(Array.from(inputs).map(input =>
-    fetch(`/api/forms/${input.dataset.id}/email`, {
-      method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: input.value.trim() })
-    })
-  ));
-  forms = await (await fetch('/api/forms')).json();
-  const msg = document.getElementById('routing-msg');
-  msg.textContent = 'Saved.';
-  setTimeout(() => msg.textContent = '', 2500);
 }
 
 // ── Forms ─────────────────────────────────────────────────────────────────────
@@ -381,9 +307,8 @@ function addField() {
 }
 
 async function createForm() {
-  const name  = document.getElementById('nf-name').value.trim();
-  const email = document.getElementById('nf-email').value.trim();
-  const msg   = document.getElementById('nf-msg');
+  const name = document.getElementById('nf-name').value.trim();
+  const msg  = document.getElementById('nf-msg');
   if (!name) { msg.innerHTML = '<div class="alert alert-danger">Form name is required.</div>'; return; }
 
   const fields = [];
@@ -393,12 +318,14 @@ async function createForm() {
     fields.push({ id: 'c' + i, label, type: document.getElementById('cf-type-' + i).value, required: document.getElementById('cf-req-' + i).value === '1' });
   }
 
-  const res = await fetch('/api/forms', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, recipientEmail: email, fields }) });
+  const res = await fetch('/api/forms', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name, fields })
+  });
   if (!res.ok) { msg.innerHTML = '<div class="alert alert-danger">Failed to save form.</div>'; return; }
 
   forms = await (await fetch('/api/forms')).json();
   document.getElementById('nf-name').value = '';
-  document.getElementById('nf-email').value = '';
   document.getElementById('cf-list').innerHTML = '';
   cfCount = 0;
   renderForms();
