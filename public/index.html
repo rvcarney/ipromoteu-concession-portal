@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Concession Requests — iPROMOTEu</title>
+<title>Submit a Request — iPROMOTEu</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet"/>
 <link rel="stylesheet" href="/style.css"/>
 </head>
@@ -20,15 +20,13 @@
     </nav>
     <div class="sidebar-footer">
       <div class="mode-chip">
-        <span class="mode-chip-label">Staff mode</span>
-        <a href="/admin" class="mode-chip-action">Admin</a>
+        <span class="mode-chip-label">Staff</span>
+        <a href="/" class="mode-chip-action">← Home</a>
       </div>
     </div>
   </aside>
 
   <main class="content">
-
-    <!-- Form list -->
     <div id="view-list">
       <div class="page-header">
         <h2>Submit a request</h2>
@@ -38,7 +36,6 @@
       <div class="form-grid" id="form-grid"></div>
     </div>
 
-    <!-- Fill form -->
     <div id="view-fill" style="display:none">
       <div style="display:flex;align-items:center;gap:14px;margin-bottom:26px;padding-bottom:20px;border-bottom:1px solid var(--border)">
         <button class="btn btn-sm" onclick="showList()">← Back</button>
@@ -50,23 +47,17 @@
       <div class="card" id="fill-container"></div>
     </div>
 
-    <!-- Success -->
     <div id="view-success" style="display:none">
       <div style="max-width:520px;margin:60px auto;text-align:center">
         <div style="width:56px;height:56px;background:var(--success-bg);border:1px solid var(--success-border);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 20px">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>
         </div>
         <h2 style="font-size:20px;font-weight:600;margin-bottom:8px">Request submitted</h2>
-        <p style="font-size:14px;color:var(--text2);margin-bottom:24px;line-height:1.7">Your request has been saved. Copy the link below and send it to your approver so they can review it in the portal.</p>
-        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 16px;display:flex;align-items:center;gap:10px;margin-bottom:24px;text-align:left">
-          <input type="text" id="review-link" readonly style="flex:1;border:none;background:transparent;font-size:13px;color:var(--text);outline:none;font-family:monospace"/>
-          <button class="btn btn-sm btn-primary" onclick="copyLink()">Copy</button>
-        </div>
-        <p id="copy-msg" style="font-size:12px;color:var(--success);min-height:18px;margin-bottom:16px"></p>
+        <p style="font-size:14px;color:var(--text2);margin-bottom:24px;line-height:1.7">Your request has been saved and is pending review. Your approver will be notified to log in and review it.</p>
         <button class="btn btn-yellow" onclick="showList()">Submit another request</button>
+        <div style="margin-top:16px"><a href="/" style="font-size:13px;color:var(--text3)">← Back to home</a></div>
       </div>
     </div>
-
   </main>
 </div>
 
@@ -83,11 +74,14 @@ function getTileIcon(id) {
 }
 
 let forms = [];
+let departments = [];
 let activeForm = null;
 
 async function init() {
-  const res = await fetch('/api/forms');
-  forms = await res.json();
+  [forms, departments] = await Promise.all([
+    fetch('/api/forms').then(r => r.json()),
+    fetch('/api/departments').then(r => r.json()),
+  ]);
   renderNav();
   renderGrid();
 }
@@ -120,8 +114,7 @@ function openForm(id) {
   activeForm = forms.find(f => f.id === id);
   if (!activeForm) return;
   document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
-  const navBtn = document.getElementById('nav-' + id);
-  if (navBtn) navBtn.classList.add('active');
+  const nb = document.getElementById('nav-' + id); if (nb) nb.classList.add('active');
   document.getElementById('fill-title').textContent = activeForm.name;
   renderFillForm(activeForm);
   document.getElementById('view-list').style.display   = 'none';
@@ -130,6 +123,7 @@ function openForm(id) {
 }
 
 function renderFillForm(f) {
+  const deptOptions = departments.map(d => `<option value="${d.name}">${d.name}</option>`).join('');
   let html = `
     <div class="section-divider">Requester information</div>
     <div class="row2">
@@ -137,8 +131,14 @@ function renderFillForm(f) {
       <div class="field"><label>Your email *</label><input type="email" id="rf-email" placeholder="you@ipromoteu.com"/></div>
     </div>
     <div class="row2">
-      <div class="field"><label>Department *</label><input type="text" id="rf-dept" placeholder="e.g. Sales"/></div>
-      <div class="field"><label>Affiliate code *</label><input type="text" id="rf-affiliate" placeholder="e.g. ABC123"/></div>
+      <div class="field">
+        <label>Department *</label>
+        <select id="rf-dept"><option value="">Select department...</option>${deptOptions}</select>
+      </div>
+      <div class="field">
+        <label>Affiliate code *</label>
+        <input type="text" id="rf-affiliate" placeholder="e.g. ABC123" oninput="this.value=this.value.toUpperCase()"/>
+      </div>
     </div>
     <div class="section-divider">Request details</div>`;
 
@@ -167,8 +167,8 @@ async function submitForm() {
   const f         = activeForm;
   const name      = document.getElementById('rf-name').value.trim();
   const email     = document.getElementById('rf-email').value.trim();
-  const dept      = document.getElementById('rf-dept').value.trim();
-  const affiliate = document.getElementById('rf-affiliate').value.trim();
+  const dept      = document.getElementById('rf-dept').value;
+  const affiliate = document.getElementById('rf-affiliate').value.trim().toUpperCase();
   const msg       = document.getElementById('rf-msg');
 
   if (!name || !email || !dept || !affiliate) {
@@ -188,34 +188,17 @@ async function submitForm() {
   msg.innerHTML = '<div class="alert alert-warn">Submitting...</div>';
 
   const res = await fetch('/api/submissions', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      formId: f.id, name, email, department: dept,
-      affiliateCode: affiliate, fields,
-      notes: document.getElementById('rf-notes').value.trim()
-    })
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ formId: f.id, name, email, department: dept, affiliateCode: affiliate, fields, notes: document.getElementById('rf-notes').value.trim() })
   });
   const data = await res.json();
 
   if (!res.ok) {
-    msg.innerHTML = `<div class="alert alert-danger">${data.error || 'Submission failed. Please try again.'}</div>`; return;
+    msg.innerHTML = `<div class="alert alert-danger">${data.error || 'Submission failed.'}</div>`; return;
   }
 
-  // Show success with review link
-  const reviewUrl = `${window.location.origin}/review/${data.token}`;
-  document.getElementById('review-link').value = reviewUrl;
   document.getElementById('view-fill').style.display    = 'none';
   document.getElementById('view-success').style.display = 'block';
-}
-
-function copyLink() {
-  const input = document.getElementById('review-link');
-  input.select();
-  document.execCommand('copy');
-  const msg = document.getElementById('copy-msg');
-  msg.textContent = 'Link copied to clipboard';
-  setTimeout(() => msg.textContent = '', 2500);
 }
 
 init();

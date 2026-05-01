@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Approver Login — iPROMOTEu</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="/style.css"/>
+<style>
+  body { display:flex; align-items:center; justify-content:center; min-height:100vh; }
+  .login-card { background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:44px 40px; width:380px; box-shadow:var(--shadow-md); text-align:center; }
+  .pin-divider { width:40px; height:2px; background:var(--yellow); border-radius:2px; margin:18px auto; }
+</style>
+</head>
+<body>
+<div class="login-card">
+  <img src="/logo.png" alt="iPROMOTEu" style="height:28px;margin-bottom:24px"/>
+  <div class="pin-divider"></div>
+  <h1 style="font-size:19px;font-weight:600;margin-bottom:6px">Approver login</h1>
+  <p style="font-size:13px;color:var(--text2);margin-bottom:24px">Enter your username and PIN to review pending requests.</p>
+  <div class="field" style="text-align:left"><label>Username</label><input type="text" id="username" placeholder="Your username" onkeydown="if(event.key==='Enter')login()"/></div>
+  <div class="field" style="text-align:left"><label>PIN</label><input type="password" id="pin" placeholder="Your PIN" onkeydown="if(event.key==='Enter')login()"/></div>
+  <button class="btn btn-primary" style="width:100%;justify-content:center;margin-top:4px" onclick="login()">Log in</button>
+  <p id="err" style="font-size:12px;color:var(--danger);min-height:18px;margin-top:10px"></p>
+  <a href="/" style="font-size:13px;color:var(--text3)">← Back to home</a>
+</div>
+<script>
+async function login() {
+  const username = document.getElementById('username').value.trim();
+  const pin      = document.getElementById('pin').value;
+  const err      = document.getElementById('err');
+  if (!username || !pin) { err.textContent = 'Please enter your username and PIN.'; return; }
+  const res = await fetch('/api/auth/approver/login', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username, pin })
+  });
+  if (res.ok) {
+    window.location.href = '/approve/dashboard';
+  } else {
+    const data = await res.json();
+    err.textContent = data.error || 'Login failed.';
+    document.getElementById('pin').value = '';
+  }
+}
+</script>
+</body>
+</html>

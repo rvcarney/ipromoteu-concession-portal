@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>iPROMOTEu — Concession Requests</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="/style.css"/>
+<style>
+  body { display:flex; align-items:center; justify-content:center; min-height:100vh; }
+  .landing-wrap { width:100%; max-width:480px; padding:24px; }
+  .landing-logo { text-align:center; margin-bottom:32px; }
+  .landing-logo img { height:32px; }
+  .landing-logo .tagline { font-size:12px; color:var(--text3); margin-top:8px; letter-spacing:0.08em; text-transform:uppercase; }
+  .role-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:20px 24px; margin-bottom:12px; cursor:pointer; display:flex; align-items:center; gap:16px; transition:border-color 0.15s, box-shadow 0.15s, transform 0.1s; text-decoration:none; }
+  .role-card:hover { border-color:var(--yellow-dark); box-shadow:0 4px 16px rgba(245,200,0,0.15); transform:translateY(-1px); }
+  .role-icon { width:42px; height:42px; border-radius:10px; background:var(--yellow-light); border:1px solid var(--yellow-border); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .role-icon svg { width:20px; height:20px; }
+  .role-title { font-size:15px; font-weight:600; color:var(--charcoal); margin-bottom:2px; }
+  .role-sub { font-size:12px; color:var(--text3); }
+  .divider { display:flex; align-items:center; gap:12px; margin:20px 0; }
+  .divider hr { flex:1; border:none; border-top:1px solid var(--border); }
+  .divider span { font-size:11px; color:var(--text3); text-transform:uppercase; letter-spacing:0.08em; }
+</style>
+</head>
+<body>
+<div class="landing-wrap">
+  <div class="landing-logo">
+    <img src="/logo.png" alt="iPROMOTEu"/>
+    <div class="tagline">Concession Request Portal</div>
+  </div>
+
+  <a href="/staff" class="role-card">
+    <div class="role-icon">
+      <svg viewBox="0 0 20 20" fill="none" stroke="#231f20" stroke-width="1.5"><rect x="3" y="4" width="14" height="12" rx="1.5"/><path d="M3 8h14M7 12h2M11 12h2"/></svg>
+    </div>
+    <div>
+      <div class="role-title">Submit a request</div>
+      <div class="role-sub">Staff — submit a concession request for review</div>
+    </div>
+    <svg style="margin-left:auto;flex-shrink:0" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="var(--text3)" stroke-width="1.5"><path d="M6 3l5 5-5 5"/></svg>
+  </a>
+
+  <a href="/approve" class="role-card">
+    <div class="role-icon">
+      <svg viewBox="0 0 20 20" fill="none" stroke="#231f20" stroke-width="1.5"><circle cx="10" cy="10" r="7"/><path d="M7 10l2 2 4-4"/></svg>
+    </div>
+    <div>
+      <div class="role-title">Approver login</div>
+      <div class="role-sub">Review and action pending concession requests</div>
+    </div>
+    <svg style="margin-left:auto;flex-shrink:0" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="var(--text3)" stroke-width="1.5"><path d="M6 3l5 5-5 5"/></svg>
+  </a>
+
+  <a href="/admin" class="role-card">
+    <div class="role-icon">
+      <svg viewBox="0 0 20 20" fill="none" stroke="#231f20" stroke-width="1.5"><path d="M10 2l1.5 3.5L15 6l-2.5 2.5.5 3.5L10 10.5 7 12l.5-3.5L5 6l3.5-.5L10 2z"/></svg>
+    </div>
+    <div>
+      <div class="role-title">Admin</div>
+      <div class="role-sub">Manage forms, approvers, metrics, and settings</div>
+    </div>
+    <svg style="margin-left:auto;flex-shrink:0" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="var(--text3)" stroke-width="1.5"><path d="M6 3l5 5-5 5"/></svg>
+  </a>
+</div>
+</body>
+</html>

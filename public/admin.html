@@ -25,6 +25,14 @@
         Submissions
       </button>
       <div class="nav-section-label" style="margin-top:8px">Settings</div>
+      <button class="nav-item" onclick="showTab('approvers',this)">
+        <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="rgba(255,255,255,0.6)" stroke-width="1.4"><circle cx="6" cy="5" r="3"/><path d="M1 14c0-3 2-5 5-5"/><circle cx="12" cy="10" r="3"/><path d="M10 13h4M12 11v4"/></svg>
+        Approvers
+      </button>
+      <button class="nav-item" onclick="showTab('departments',this)">
+        <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="rgba(255,255,255,0.6)" stroke-width="1.4"><rect x="1" y="1" width="6" height="6" rx="1"/><rect x="9" y="1" width="6" height="6" rx="1"/><rect x="1" y="9" width="6" height="6" rx="1"/><rect x="9" y="9" width="6" height="6" rx="1"/></svg>
+        Departments
+      </button>
       <button class="nav-item" onclick="showTab('forms',this)">
         <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="rgba(255,255,255,0.6)" stroke-width="1.4"><path d="M8 3v10M3 8h10"/></svg>
         Manage forms
@@ -32,8 +40,8 @@
     </nav>
     <div class="sidebar-footer">
       <div class="mode-chip">
-        <span class="mode-chip-label">Admin mode</span>
-        <a href="/" class="mode-chip-action">Staff portal</a>
+        <span class="mode-chip-label">Admin</span>
+        <a href="/" class="mode-chip-action">← Home</a>
       </div>
       <div style="margin-top:8px">
         <button class="nav-item" onclick="logout()" style="color:rgba(255,255,255,0.4);font-size:12px">
@@ -48,51 +56,25 @@
 
     <!-- Dashboard -->
     <div id="tab-dashboard" style="display:none">
-      <div class="page-header">
-        <h2>Dashboard</h2>
-        <p>Live metrics across all submissions.</p>
-        <div class="yellow-rule"></div>
-      </div>
+      <div class="page-header"><h2>Dashboard</h2><p>Live metrics across all submissions.</p><div class="yellow-rule"></div></div>
       <div class="metric-grid" id="dash-metrics"></div>
       <div class="row2" style="gap:16px;margin-bottom:16px">
-        <div class="card">
-          <div class="section-divider" style="margin-top:0">By request type</div>
-          <div id="chart-type"></div>
-        </div>
-        <div class="card">
-          <div class="section-divider" style="margin-top:0">By affiliate code</div>
-          <div id="chart-affiliate"></div>
-        </div>
+        <div class="card"><div class="section-divider" style="margin-top:0">By request type</div><div id="chart-type"></div></div>
+        <div class="card"><div class="section-divider" style="margin-top:0">By affiliate code</div><div id="chart-affiliate"></div></div>
       </div>
       <div class="row2" style="gap:16px;margin-bottom:16px">
-        <div class="card">
-          <div class="section-divider" style="margin-top:0">By staff member</div>
-          <div id="chart-staff"></div>
-        </div>
-        <div class="card">
-          <div class="section-divider" style="margin-top:0">By department</div>
-          <div id="chart-dept"></div>
-        </div>
+        <div class="card"><div class="section-divider" style="margin-top:0">By staff member</div><div id="chart-staff"></div></div>
+        <div class="card"><div class="section-divider" style="margin-top:0">By department</div><div id="chart-dept"></div></div>
       </div>
       <div class="row2" style="gap:16px">
-        <div class="card">
-          <div class="section-divider" style="margin-top:0">Decisions by approver</div>
-          <div id="chart-approver"></div>
-        </div>
-        <div class="card">
-          <div class="section-divider" style="margin-top:0">Pending approval</div>
-          <div id="chart-pending"></div>
-        </div>
+        <div class="card"><div class="section-divider" style="margin-top:0">By approver</div><div id="chart-approver"></div></div>
+        <div class="card"><div class="section-divider" style="margin-top:0">Pending</div><div id="chart-pending"></div></div>
       </div>
     </div>
 
     <!-- Submissions -->
     <div id="tab-submissions" style="display:none">
-      <div class="page-header">
-        <h2>Submission history</h2>
-        <p>All submissions across all staff and approvers.</p>
-        <div class="yellow-rule"></div>
-      </div>
+      <div class="page-header"><h2>Submission history</h2><p>All submissions across all staff and approvers.</p><div class="yellow-rule"></div></div>
       <div class="card">
         <div class="filter-bar">
           <select id="filter-form" onchange="loadSubmissions()"><option value="">All form types</option></select>
@@ -107,9 +89,7 @@
         </div>
         <div style="overflow-x:auto">
           <table class="log-table">
-            <thead><tr>
-              <th>Date</th><th>Form type</th><th>Staff</th><th>Department</th><th>Affiliate</th><th>Decision</th><th>Approver</th>
-            </tr></thead>
+            <thead><tr><th>Date</th><th>Form</th><th>Staff</th><th>Dept</th><th>Affiliate</th><th>Decision</th><th>Approver</th></tr></thead>
             <tbody id="sub-tbody"></tbody>
           </table>
         </div>
@@ -117,13 +97,48 @@
       </div>
     </div>
 
+    <!-- Approvers -->
+    <div id="tab-approvers" style="display:none">
+      <div class="page-header"><h2>Approvers</h2><p>Manage approver accounts and their assigned form types.</p><div class="yellow-rule"></div></div>
+      <div class="card" style="margin-bottom:16px">
+        <div class="section-divider" style="margin-top:0">Current approvers</div>
+        <div id="approvers-list"></div>
+      </div>
+      <div class="card">
+        <div class="section-divider" style="margin-top:0">Add approver</div>
+        <div class="row2">
+          <div class="field"><label>Username *</label><input type="text" id="ap-username" placeholder="e.g. jsmith"/></div>
+          <div class="field"><label>Initial PIN *</label><input type="password" id="ap-pin" placeholder="Min 4 characters"/></div>
+        </div>
+        <div class="field">
+          <label>Assigned form types *</label>
+          <div id="ap-form-checkboxes" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:6px"></div>
+        </div>
+        <button class="btn btn-yellow" onclick="createApprover()">Add approver</button>
+        <div id="ap-msg"></div>
+      </div>
+    </div>
+
+    <!-- Departments -->
+    <div id="tab-departments" style="display:none">
+      <div class="page-header"><h2>Departments</h2><p>Manage the department list shown on submission forms.</p><div class="yellow-rule"></div></div>
+      <div class="card" style="margin-bottom:16px">
+        <div class="section-divider" style="margin-top:0">Current departments</div>
+        <div id="dept-list"></div>
+      </div>
+      <div class="card">
+        <div class="section-divider" style="margin-top:0">Add department</div>
+        <div style="display:flex;gap:10px">
+          <input type="text" id="dept-new" placeholder="Department name" style="flex:1" onkeydown="if(event.key==='Enter')addDepartment()"/>
+          <button class="btn btn-yellow" onclick="addDepartment()">Add</button>
+        </div>
+        <div id="dept-msg"></div>
+      </div>
+    </div>
+
     <!-- Forms -->
     <div id="tab-forms" style="display:none">
-      <div class="page-header">
-        <h2>Manage forms</h2>
-        <p>Built-in forms cannot be deleted. Custom forms can be removed.</p>
-        <div class="yellow-rule"></div>
-      </div>
+      <div class="page-header"><h2>Manage forms</h2><p>Built-in forms cannot be deleted. Custom forms can be removed.</p><div class="yellow-rule"></div></div>
       <div class="card" style="margin-bottom:16px">
         <div class="section-divider" style="margin-top:0">All forms</div>
         <div id="forms-list"></div>
@@ -147,85 +162,79 @@
 
 <script>
 let forms = [];
+let approvers = [];
+let departments = [];
 let cfCount = 0;
 
 async function init() {
-  const auth = await fetch('/api/auth/status');
-  const { isAdmin } = await auth.json();
-  if (!isAdmin) { window.location.href = '/admin/login'; return; }
-  forms = await (await fetch('/api/forms')).json();
+  const auth = await fetch('/api/auth/admin/status').then(r => r.json());
+  if (!auth.isAdmin) { window.location.href = '/admin'; return; }
+  [forms, approvers, departments] = await Promise.all([
+    fetch('/api/forms').then(r => r.json()),
+    fetch('/api/approvers').then(r => r.json()),
+    fetch('/api/departments').then(r => r.json()),
+  ]);
   const path = window.location.pathname;
-  if      (path.includes('submissions')) showTab('submissions', null);
-  else if (path.includes('forms'))       showTab('forms', null);
-  else                                   showTab('dashboard', null);
+  if      (path.includes('submissions'))  showTab('submissions', null);
+  else if (path.includes('approvers'))    showTab('approvers', null);
+  else if (path.includes('departments'))  showTab('departments', null);
+  else if (path.includes('forms'))        showTab('forms', null);
+  else                                    showTab('dashboard', null);
 }
 
 function showTab(tab, btn) {
-  ['dashboard','submissions','forms'].forEach(t => {
+  ['dashboard','submissions','approvers','departments','forms'].forEach(t => {
     document.getElementById('tab-' + t).style.display = 'none';
   });
   document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
   document.getElementById('tab-' + tab).style.display = 'block';
   if (btn) btn.classList.add('active');
-  else {
-    document.querySelectorAll('.nav-item').forEach(b => {
-      if (b.textContent.toLowerCase().includes(tab.slice(0,4))) b.classList.add('active');
-    });
-  }
+  else document.querySelectorAll('.nav-item').forEach(b => { if(b.textContent.toLowerCase().includes(tab.slice(0,5))) b.classList.add('active'); });
   history.replaceState({}, '', '/admin/' + tab);
   if (tab === 'dashboard')   loadDashboard();
   if (tab === 'submissions') { populateFormFilter(); loadSubmissions(); }
+  if (tab === 'approvers')   renderApprovers();
+  if (tab === 'departments') renderDepartments();
   if (tab === 'forms')       renderForms();
 }
 
 async function logout() {
-  await fetch('/api/auth/logout', { method: 'POST' });
+  await fetch('/api/auth/admin/logout', { method: 'POST' });
   window.location.href = '/';
 }
 
 // ── Dashboard ─────────────────────────────────────────────────────────────────
 async function loadDashboard() {
-  const m = await (await fetch('/api/admin/metrics')).json();
-  const approvalRate = (m.approved + m.denied) > 0
-    ? Math.round((m.approved / (m.approved + m.denied)) * 100) + '%' : '—';
-
+  const m = await fetch('/api/admin/metrics').then(r => r.json());
+  const rate = (m.approved+m.denied)>0 ? Math.round((m.approved/(m.approved+m.denied))*100)+'%' : '—';
   document.getElementById('dash-metrics').innerHTML = `
     <div class="metric-card"><div class="mc-label">Total</div><div class="mc-value">${m.total}</div><div class="mc-sub">all time</div></div>
     <div class="metric-card"><div class="mc-label">This month</div><div class="mc-value">${m.thisMonth}</div></div>
-    <div class="metric-card"><div class="mc-label">Approval rate</div><div class="mc-value">${approvalRate}</div><div class="mc-sub">${m.approved} approved · ${m.denied} denied</div></div>
-    <div class="metric-card"><div class="mc-label">Pending</div><div class="mc-value">${m.pending}</div><div class="mc-sub">awaiting decision</div></div>
-  `;
-
+    <div class="metric-card"><div class="mc-label">Approval rate</div><div class="mc-value">${rate}</div><div class="mc-sub">${m.approved} approved · ${m.denied} denied</div></div>
+    <div class="metric-card"><div class="mc-label">Pending</div><div class="mc-value">${m.pending}</div><div class="mc-sub">awaiting decision</div></div>`;
   renderBar('chart-type',      m.byType,      'form_name');
   renderBar('chart-affiliate', m.byAffiliate, 'affiliate_code');
   renderBar('chart-staff',     m.byStaff,     'requester_name');
   renderBar('chart-dept',      m.byDept,      'department');
   renderBar('chart-approver',  m.byApprover,  'approver_name');
-
-  const pending = await (await fetch('/api/admin/submissions?decision=PENDING')).json();
+  const pending = await fetch('/api/admin/submissions?decision=PENDING').then(r => r.json());
   const el = document.getElementById('chart-pending');
-  if (!pending.length) {
-    el.innerHTML = '<p style="font-size:13px;color:var(--text3);padding:8px 0">No pending submissions.</p>';
-  } else {
-    el.innerHTML = pending.slice(0, 8).map(s => `
-      <div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--border)">
-        <div>
-          <div style="font-size:13px;font-weight:500">${s.requester_name}</div>
-          <div style="font-size:11px;color:var(--text3)">${s.form_name} · ${s.affiliate_code} · ${new Date(s.submitted_at).toLocaleDateString()}</div>
-        </div>
-        <a href="/review/${s.decision_token}" target="_blank" class="btn btn-sm btn-yellow">Review</a>
-      </div>`).join('');
-  }
+  if (!pending.length) { el.innerHTML='<p style="font-size:13px;color:var(--text3);padding:8px 0">No pending submissions.</p>'; return; }
+  el.innerHTML = pending.slice(0,8).map(s => `
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--border)">
+      <div><div style="font-size:13px;font-weight:500">${s.requester_name}</div><div style="font-size:11px;color:var(--text3)">${s.form_name} · ${s.affiliate_code}</div></div>
+      <span class="decision-badge PENDING">Pending</span>
+    </div>`).join('');
 }
 
 function renderBar(id, data, labelKey) {
   const el = document.getElementById(id);
-  if (!data || !data.length) { el.innerHTML = '<p style="font-size:13px;color:var(--text3);padding:8px 0">No data yet.</p>'; return; }
+  if (!data||!data.length) { el.innerHTML='<p style="font-size:13px;color:var(--text3);padding:8px 0">No data yet.</p>'; return; }
   const max = data[0].count;
-  el.innerHTML = data.slice(0, 8).map(row => `
+  el.innerHTML = data.slice(0,8).map(row => `
     <div class="bar-row">
       <div class="bar-label" title="${row[labelKey]}">${row[labelKey]}</div>
-      <div class="bar-track"><div class="bar-fill" style="width:${Math.round((row.count / max) * 100)}%"></div></div>
+      <div class="bar-track"><div class="bar-fill" style="width:${Math.round((row.count/max)*100)}%"></div></div>
       <div class="bar-count">${row.count}</div>
     </div>`).join('');
 }
@@ -234,43 +243,128 @@ function renderBar(id, data, labelKey) {
 function populateFormFilter() {
   const sel = document.getElementById('filter-form');
   const existing = Array.from(sel.options).map(o => o.value);
-  forms.forEach(f => {
-    if (!existing.includes(f.id)) {
-      const o = document.createElement('option'); o.value = f.id; o.textContent = f.name; sel.appendChild(o);
-    }
-  });
+  forms.forEach(f => { if (!existing.includes(f.id)) { const o=document.createElement('option');o.value=f.id;o.textContent=f.name;sel.appendChild(o); } });
 }
-
 async function loadSubmissions() {
+  const params = new URLSearchParams();
   const formId   = document.getElementById('filter-form').value;
   const decision = document.getElementById('filter-decision').value;
   const search   = document.getElementById('filter-search').value;
-  const params   = new URLSearchParams();
   if (formId)   params.set('formId', formId);
   if (decision) params.set('decision', decision);
   if (search)   params.set('search', search);
-
-  const subs = await (await fetch('/api/admin/submissions?' + params)).json();
+  const subs = await fetch('/api/admin/submissions?' + params).then(r => r.json());
   const tbody = document.getElementById('sub-tbody');
   const empty = document.getElementById('sub-empty');
-
-  if (!subs.length) { tbody.innerHTML = ''; empty.style.display = 'block'; return; }
+  if (!subs.length) { tbody.innerHTML=''; empty.style.display='block'; return; }
   empty.style.display = 'none';
   tbody.innerHTML = subs.map(s => `
     <tr>
-      <td style="white-space:nowrap">${new Date(s.submitted_at).toLocaleString('en-US', { dateStyle: 'short', timeStyle: 'short' })}</td>
+      <td style="white-space:nowrap">${new Date(s.submitted_at).toLocaleString('en-US',{dateStyle:'short',timeStyle:'short'})}</td>
       <td><span class="log-badge">${s.form_name}</span></td>
       <td>${s.requester_name}<br><span style="font-size:11px;color:var(--text3)">${s.requester_email}</span></td>
       <td>${s.department}</td>
       <td>${s.affiliate_code}</td>
       <td><span class="decision-badge ${s.decision}">${s.decision}</span></td>
-      <td>
-        ${s.decision === 'PENDING'
-          ? `<a href="/review/${s.decision_token}" target="_blank" class="btn btn-sm btn-yellow">Review</a>`
-          : `${s.approver_name || '—'}${s.approver_notes ? `<br><span style="font-size:11px;color:var(--text3)">${s.approver_notes}</span>` : ''}`
-        }
-      </td>
+      <td>${s.approver_name||'—'}${s.approver_notes?`<br><span style="font-size:11px;color:var(--text3)">${s.approver_notes}</span>`:''}</td>
     </tr>`).join('');
+}
+
+// ── Approvers ─────────────────────────────────────────────────────────────────
+function renderApprovers() {
+  const el = document.getElementById('approvers-list');
+  if (!approvers.length) { el.innerHTML='<p style="font-size:13px;color:var(--text3);padding:8px 0">No approvers configured yet.</p>'; }
+  else {
+    el.innerHTML = approvers.map(a => {
+      const assignedForms = a.form_ids.map(id => forms.find(f=>f.id===id)?.name).filter(Boolean).join(', ') || 'None assigned';
+      return `<div class="manage-row">
+        <div class="manage-info">
+          <div class="mn">${a.username}</div>
+          <div class="ms">${assignedForms}</div>
+        </div>
+        <button class="btn btn-sm" onclick="resetApproverPin('${a.id}','${a.username}')">Reset PIN</button>
+        <button class="btn btn-sm btn-danger" onclick="deleteApprover('${a.id}','${a.username}')">Remove</button>
+      </div>`;
+    }).join('');
+  }
+  // Render form checkboxes for new approver
+  document.getElementById('ap-form-checkboxes').innerHTML = forms.map(f => `
+    <label style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:400;color:var(--text);cursor:pointer">
+      <input type="checkbox" value="${f.id}" style="width:auto"/> ${f.name}
+    </label>`).join('');
+}
+
+async function createApprover() {
+  const username = document.getElementById('ap-username').value.trim();
+  const pin      = document.getElementById('ap-pin').value;
+  const formIds  = Array.from(document.querySelectorAll('#ap-form-checkboxes input:checked')).map(cb => cb.value);
+  const msg      = document.getElementById('ap-msg');
+  if (!username || !pin) { msg.innerHTML='<div class="alert alert-danger">Username and PIN are required.</div>'; return; }
+  if (!formIds.length)   { msg.innerHTML='<div class="alert alert-danger">Assign at least one form type.</div>'; return; }
+  const res = await fetch('/api/approvers', {
+    method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({username,pin,formIds})
+  });
+  const data = await res.json();
+  if (!res.ok) { msg.innerHTML=`<div class="alert alert-danger">${data.error}</div>`; return; }
+  document.getElementById('ap-username').value='';
+  document.getElementById('ap-pin').value='';
+  document.querySelectorAll('#ap-form-checkboxes input').forEach(cb=>cb.checked=false);
+  approvers = await fetch('/api/approvers').then(r=>r.json());
+  renderApprovers();
+  msg.innerHTML=`<div class="alert alert-success">Approver "${username}" added.</div>`;
+  setTimeout(()=>msg.innerHTML='',3000);
+}
+
+async function resetApproverPin(id, username) {
+  const newPin = prompt(`Enter new PIN for ${username} (min 4 characters):`);
+  if (!newPin) return;
+  if (newPin.length < 4) { alert('PIN must be at least 4 characters.'); return; }
+  const res = await fetch(`/api/approvers/${id}/reset-pin`, {
+    method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({newPin})
+  });
+  if (res.ok) alert(`PIN reset for ${username}.`);
+  else { const d=await res.json(); alert(d.error||'Failed to reset PIN.'); }
+}
+
+async function deleteApprover(id, username) {
+  if (!confirm(`Remove approver "${username}"? This cannot be undone.`)) return;
+  await fetch(`/api/approvers/${id}`, {method:'DELETE'});
+  approvers = await fetch('/api/approvers').then(r=>r.json());
+  renderApprovers();
+}
+
+// ── Departments ───────────────────────────────────────────────────────────────
+function renderDepartments() {
+  const el = document.getElementById('dept-list');
+  if (!departments.length) { el.innerHTML='<p style="font-size:13px;color:var(--text3)">No departments yet.</p>'; return; }
+  el.innerHTML = departments.map(d => `
+    <div class="manage-row">
+      <div class="manage-info"><div class="mn">${d.name}</div></div>
+      <button class="btn btn-sm btn-danger" onclick="deleteDepartment(${d.id},'${d.name}')">Remove</button>
+    </div>`).join('');
+}
+
+async function addDepartment() {
+  const name = document.getElementById('dept-new').value.trim();
+  const msg  = document.getElementById('dept-msg');
+  if (!name) return;
+  const res = await fetch('/api/departments', {
+    method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({name})
+  });
+  const data = await res.json();
+  if (!res.ok) { msg.innerHTML=`<div class="alert alert-danger">${data.error}</div>`; return; }
+  document.getElementById('dept-new').value='';
+  departments = await fetch('/api/departments').then(r=>r.json());
+  renderDepartments();
+  msg.innerHTML=`<div class="alert alert-success">"${name}" added.</div>`;
+  setTimeout(()=>msg.innerHTML='',2500);
+}
+
+async function deleteDepartment(id, name) {
+  if (!confirm(`Remove department "${name}"?`)) return;
+  await fetch(`/api/departments/${id}`, {method:'DELETE'});
+  departments = await fetch('/api/departments').then(r=>r.json());
+  renderDepartments();
 }
 
 // ── Forms ─────────────────────────────────────────────────────────────────────
@@ -279,58 +373,47 @@ function renderForms() {
     <div class="manage-row">
       <div class="manage-info">
         <div class="mn">${f.name}</div>
-        <div class="ms">${f.fields.length} field${f.fields.length !== 1 ? 's' : ''}: ${f.fields.map(x => x.label).join(', ')}</div>
+        <div class="ms">${f.fields.length} field${f.fields.length!==1?'s':''}: ${f.fields.map(x=>x.label).join(', ')}</div>
       </div>
-      <span style="font-size:11px;padding:3px 8px;border-radius:20px;background:${f.is_builtin ? 'var(--surface2)' : 'var(--yellow-light)'};color:${f.is_builtin ? 'var(--text3)' : 'var(--charcoal2)'};border:1px solid ${f.is_builtin ? 'var(--border)' : 'var(--yellow-border)'};">${f.is_builtin ? 'Built-in' : 'Custom'}</span>
-      ${!f.is_builtin ? `<button class="btn btn-sm btn-danger" onclick="deleteForm('${f.id}')">Delete</button>` : '<div style="width:62px"></div>'}
+      <span style="font-size:11px;padding:3px 8px;border-radius:20px;background:${f.is_builtin?'var(--surface2)':'var(--yellow-light)'};color:${f.is_builtin?'var(--text3)':'var(--charcoal2)'};border:1px solid ${f.is_builtin?'var(--border)':'var(--yellow-border)'};">${f.is_builtin?'Built-in':'Custom'}</span>
+      ${!f.is_builtin?`<button class="btn btn-sm btn-danger" onclick="deleteForm('${f.id}')">Delete</button>`:'<div style="width:62px"></div>'}
     </div>`).join('');
 }
 
 async function deleteForm(id) {
-  if (!confirm('Delete this form? This cannot be undone.')) return;
-  await fetch(`/api/forms/${id}`, { method: 'DELETE' });
-  forms = await (await fetch('/api/forms')).json();
+  if (!confirm('Delete this form?')) return;
+  await fetch(`/api/forms/${id}`,{method:'DELETE'});
+  forms = await fetch('/api/forms').then(r=>r.json());
   renderForms();
 }
 
 function addField() {
-  const list = document.getElementById('cf-list');
-  const ph = list.querySelector('p'); if (ph) ph.remove();
-  const i = cfCount++;
-  const row = document.createElement('div'); row.className = 'cf-row'; row.id = 'cf-row-' + i;
-  row.innerHTML = `
-    <input type="text" id="cf-lbl-${i}" placeholder="Field label"/>
-    <select id="cf-type-${i}"><option value="text">Text</option><option value="number">Number</option><option value="textarea">Textarea</option></select>
-    <select id="cf-req-${i}"><option value="1">Required</option><option value="0">Optional</option></select>
-    <button class="btn btn-sm btn-danger" onclick="document.getElementById('cf-row-${i}').remove()">✕</button>`;
+  const list=document.getElementById('cf-list');
+  const ph=list.querySelector('p');if(ph)ph.remove();
+  const i=cfCount++;
+  const row=document.createElement('div');row.className='cf-row';row.id='cf-row-'+i;
+  row.innerHTML=`<input type="text" id="cf-lbl-${i}" placeholder="Field label"/><select id="cf-type-${i}"><option value="text">Text</option><option value="number">Number</option><option value="textarea">Textarea</option></select><select id="cf-req-${i}"><option value="1">Required</option><option value="0">Optional</option></select><button class="btn btn-sm btn-danger" onclick="document.getElementById('cf-row-${i}').remove()">✕</button>`;
   list.appendChild(row);
 }
 
 async function createForm() {
-  const name = document.getElementById('nf-name').value.trim();
-  const msg  = document.getElementById('nf-msg');
-  if (!name) { msg.innerHTML = '<div class="alert alert-danger">Form name is required.</div>'; return; }
-
-  const fields = [];
-  for (let i = 0; i < cfCount; i++) {
-    const row = document.getElementById('cf-row-' + i); if (!row) continue;
-    const label = document.getElementById('cf-lbl-' + i).value.trim(); if (!label) continue;
-    fields.push({ id: 'c' + i, label, type: document.getElementById('cf-type-' + i).value, required: document.getElementById('cf-req-' + i).value === '1' });
+  const name=document.getElementById('nf-name').value.trim();
+  const msg=document.getElementById('nf-msg');
+  if(!name){msg.innerHTML='<div class="alert alert-danger">Form name is required.</div>';return;}
+  const fields=[];
+  for(let i=0;i<cfCount;i++){
+    const row=document.getElementById('cf-row-'+i);if(!row)continue;
+    const label=document.getElementById('cf-lbl-'+i).value.trim();if(!label)continue;
+    fields.push({id:'c'+i,label,type:document.getElementById('cf-type-'+i).value,required:document.getElementById('cf-req-'+i).value==='1'});
   }
-
-  const res = await fetch('/api/forms', {
-    method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ name, fields })
-  });
-  if (!res.ok) { msg.innerHTML = '<div class="alert alert-danger">Failed to save form.</div>'; return; }
-
-  forms = await (await fetch('/api/forms')).json();
-  document.getElementById('nf-name').value = '';
-  document.getElementById('cf-list').innerHTML = '';
-  cfCount = 0;
-  renderForms();
-  msg.innerHTML = `<div class="alert alert-success">Form "${name}" saved.</div>`;
-  setTimeout(() => msg.innerHTML = '', 3000);
+  const res=await fetch('/api/forms',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,fields})});
+  if(!res.ok){msg.innerHTML='<div class="alert alert-danger">Failed to save form.</div>';return;}
+  forms=await fetch('/api/forms').then(r=>r.json());
+  document.getElementById('nf-name').value='';
+  document.getElementById('cf-list').innerHTML='';
+  cfCount=0;renderForms();
+  msg.innerHTML=`<div class="alert alert-success">Form "${name}" saved.</div>`;
+  setTimeout(()=>msg.innerHTML='',3000);
 }
 
 init();
