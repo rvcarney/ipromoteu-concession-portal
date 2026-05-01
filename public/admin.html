@@ -189,7 +189,9 @@ function showTab(tab, btn) {
   document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
   document.getElementById('tab-' + tab).style.display = 'block';
   if (btn) btn.classList.add('active');
-  else document.querySelectorAll('.nav-item').forEach(b => { if(b.textContent.toLowerCase().includes(tab.slice(0,5))) b.classList.add('active'); });
+  else document.querySelectorAll('.nav-item').forEach(b => {
+    if (b.textContent.toLowerCase().includes(tab.slice(0,5))) b.classList.add('active');
+  });
   history.replaceState({}, '', '/admin/' + tab);
   if (tab === 'dashboard')   loadDashboard();
   if (tab === 'submissions') { populateFormFilter(); loadSubmissions(); }
@@ -243,8 +245,13 @@ function renderBar(id, data, labelKey) {
 function populateFormFilter() {
   const sel = document.getElementById('filter-form');
   const existing = Array.from(sel.options).map(o => o.value);
-  forms.forEach(f => { if (!existing.includes(f.id)) { const o=document.createElement('option');o.value=f.id;o.textContent=f.name;sel.appendChild(o); } });
+  forms.forEach(f => {
+    if (!existing.includes(f.id)) {
+      const o = document.createElement('option'); o.value=f.id; o.textContent=f.name; sel.appendChild(o);
+    }
+  });
 }
+
 async function loadSubmissions() {
   const params = new URLSearchParams();
   const formId   = document.getElementById('filter-form').value;
@@ -273,25 +280,68 @@ async function loadSubmissions() {
 // ── Approvers ─────────────────────────────────────────────────────────────────
 function renderApprovers() {
   const el = document.getElementById('approvers-list');
-  if (!approvers.length) { el.innerHTML='<p style="font-size:13px;color:var(--text3);padding:8px 0">No approvers configured yet.</p>'; }
-  else {
+  if (!approvers.length) {
+    el.innerHTML = '<p style="font-size:13px;color:var(--text3);padding:8px 0">No approvers configured yet.</p>';
+  } else {
     el.innerHTML = approvers.map(a => {
       const assignedForms = a.form_ids.map(id => forms.find(f=>f.id===id)?.name).filter(Boolean).join(', ') || 'None assigned';
-      return `<div class="manage-row">
+      return `<div class="manage-row" id="approver-row-${a.id}">
         <div class="manage-info">
           <div class="mn">${a.username}</div>
-          <div class="ms">${assignedForms}</div>
+          <div class="ms" id="approver-forms-${a.id}">${assignedForms}</div>
         </div>
+        <button class="btn btn-sm" onclick="editApproverForms('${a.id}')">Edit forms</button>
         <button class="btn btn-sm" onclick="resetApproverPin('${a.id}','${a.username}')">Reset PIN</button>
         <button class="btn btn-sm btn-danger" onclick="deleteApprover('${a.id}','${a.username}')">Remove</button>
       </div>`;
     }).join('');
   }
-  // Render form checkboxes for new approver
   document.getElementById('ap-form-checkboxes').innerHTML = forms.map(f => `
     <label style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:400;color:var(--text);cursor:pointer">
       <input type="checkbox" value="${f.id}" style="width:auto"/> ${f.name}
     </label>`).join('');
+}
+
+function editApproverForms(id) {
+  const approver = approvers.find(a => a.id === id);
+  if (!approver) return;
+  const row = document.getElementById('approver-row-' + id);
+  const existing = document.getElementById('edit-forms-' + id);
+  if (existing) { existing.remove(); return; }
+
+  const panel = document.createElement('div');
+  panel.id = 'edit-forms-' + id;
+  panel.style.cssText = 'grid-column:1/-1;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px;margin-top:8px';
+  panel.innerHTML = `
+    <p style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.06em">Assigned forms for ${approver.username}</p>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
+      ${forms.map(f => `
+        <label style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:400;color:var(--text);cursor:pointer">
+          <input type="checkbox" value="${f.id}" ${approver.form_ids.includes(f.id) ? 'checked' : ''} style="width:auto"/> ${f.name}
+        </label>`).join('')}
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-yellow btn-sm" onclick="saveApproverForms('${id}')">Save</button>
+      <button class="btn btn-sm" onclick="document.getElementById('edit-forms-${id}').remove()">Cancel</button>
+    </div>
+    <div id="edit-forms-msg-${id}"></div>`;
+
+  row.insertAdjacentElement('afterend', panel);
+}
+
+async function saveApproverForms(id) {
+  const formIds = Array.from(document.querySelectorAll(`#edit-forms-${id} input:checked`)).map(cb => cb.value);
+  const msg = document.getElementById('edit-forms-msg-' + id);
+  if (!formIds.length) { msg.innerHTML='<div class="alert alert-danger" style="margin-top:8px">Assign at least one form type.</div>'; return; }
+  const res = await fetch(`/api/approvers/${id}/forms`, {
+    method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ formIds })
+  });
+  if (!res.ok) { msg.innerHTML='<div class="alert alert-danger" style="margin-top:8px">Failed to save.</div>'; return; }
+  approvers = await fetch('/api/approvers').then(r => r.json());
+  const updated = approvers.find(a => a.id === id);
+  const assignedForms = updated.form_ids.map(fid => forms.find(f=>f.id===fid)?.name).filter(Boolean).join(', ') || 'None assigned';
+  document.getElementById('approver-forms-' + id).textContent = assignedForms;
+  document.getElementById('edit-forms-' + id).remove();
 }
 
 async function createApprover() {
@@ -388,30 +438,30 @@ async function deleteForm(id) {
 }
 
 function addField() {
-  const list=document.getElementById('cf-list');
-  const ph=list.querySelector('p');if(ph)ph.remove();
-  const i=cfCount++;
-  const row=document.createElement('div');row.className='cf-row';row.id='cf-row-'+i;
+  const list = document.getElementById('cf-list');
+  const ph = list.querySelector('p'); if(ph) ph.remove();
+  const i = cfCount++;
+  const row = document.createElement('div'); row.className='cf-row'; row.id='cf-row-'+i;
   row.innerHTML=`<input type="text" id="cf-lbl-${i}" placeholder="Field label"/><select id="cf-type-${i}"><option value="text">Text</option><option value="number">Number</option><option value="textarea">Textarea</option></select><select id="cf-req-${i}"><option value="1">Required</option><option value="0">Optional</option></select><button class="btn btn-sm btn-danger" onclick="document.getElementById('cf-row-${i}').remove()">✕</button>`;
   list.appendChild(row);
 }
 
 async function createForm() {
-  const name=document.getElementById('nf-name').value.trim();
-  const msg=document.getElementById('nf-msg');
-  if(!name){msg.innerHTML='<div class="alert alert-danger">Form name is required.</div>';return;}
-  const fields=[];
-  for(let i=0;i<cfCount;i++){
-    const row=document.getElementById('cf-row-'+i);if(!row)continue;
-    const label=document.getElementById('cf-lbl-'+i).value.trim();if(!label)continue;
-    fields.push({id:'c'+i,label,type:document.getElementById('cf-type-'+i).value,required:document.getElementById('cf-req-'+i).value==='1'});
+  const name = document.getElementById('nf-name').value.trim();
+  const msg  = document.getElementById('nf-msg');
+  if (!name) { msg.innerHTML='<div class="alert alert-danger">Form name is required.</div>'; return; }
+  const fields = [];
+  for (let i=0; i<cfCount; i++) {
+    const row = document.getElementById('cf-row-'+i); if(!row) continue;
+    const label = document.getElementById('cf-lbl-'+i).value.trim(); if(!label) continue;
+    fields.push({id:'c'+i, label, type:document.getElementById('cf-type-'+i).value, required:document.getElementById('cf-req-'+i).value==='1'});
   }
-  const res=await fetch('/api/forms',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,fields})});
-  if(!res.ok){msg.innerHTML='<div class="alert alert-danger">Failed to save form.</div>';return;}
-  forms=await fetch('/api/forms').then(r=>r.json());
+  const res = await fetch('/api/forms', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({name,fields})});
+  if (!res.ok) { msg.innerHTML='<div class="alert alert-danger">Failed to save form.</div>'; return; }
+  forms = await fetch('/api/forms').then(r=>r.json());
   document.getElementById('nf-name').value='';
   document.getElementById('cf-list').innerHTML='';
-  cfCount=0;renderForms();
+  cfCount=0; renderForms();
   msg.innerHTML=`<div class="alert alert-success">Form "${name}" saved.</div>`;
   setTimeout(()=>msg.innerHTML='',3000);
 }
