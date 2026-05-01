@@ -6,6 +6,36 @@
 <title>Admin — iPROMOTEu Concession Portal</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet"/>
 <link rel="stylesheet" href="/style.css"/>
+<style>
+  .dash-tabs{display:flex;gap:2px;margin-bottom:20px;border-bottom:1px solid var(--border)}
+  .dash-tab{padding:8px 16px;font-size:13px;font-weight:500;border:none;background:none;cursor:pointer;color:var(--text2);border-bottom:2px solid transparent;margin-bottom:-1px;font-family:'Inter',sans-serif}
+  .dash-tab:hover{color:var(--text)}
+  .dash-tab.active{color:var(--charcoal);border-bottom-color:var(--yellow)}
+  .aff-table{width:100%;border-collapse:collapse;font-size:13px}
+  .aff-table th{text-align:left;padding:8px 10px;font-size:11px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:var(--text3);border-bottom:1px solid var(--border);background:var(--surface2)}
+  .aff-table td{padding:9px 10px;border-bottom:1px solid var(--border);color:var(--text2)}
+  .aff-table tr:last-child td{border-bottom:none}
+  .aff-table tr:hover td{background:var(--surface2)}
+  .aff-code{font-weight:600;color:var(--charcoal);font-family:monospace}
+  .month-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px}
+  .month-cell{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 12px}
+  .month-cell .mc-month{font-size:11px;color:var(--text3);margin-bottom:4px;font-weight:500}
+  .month-cell .mc-count{font-size:22px;font-weight:600;color:var(--charcoal)}
+  .month-cell .mc-bar{height:3px;background:var(--yellow);border-radius:2px;margin-top:6px}
+  .year-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)}
+  .year-row:last-child{border-bottom:none}
+  .year-label{font-size:15px;font-weight:600;color:var(--charcoal);flex:0 0 60px}
+  .year-track{flex:1;background:var(--surface2);border-radius:4px;height:12px;overflow:hidden}
+  .year-fill{height:100%;background:var(--yellow);border-radius:4px}
+  .year-count{font-size:13px;font-weight:500;color:var(--text2);flex:0 0 40px;text-align:right}
+  .filter-chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+  .chip{padding:4px 12px;border-radius:20px;font-size:12px;font-weight:500;border:1px solid var(--border);background:var(--surface);color:var(--text2);cursor:pointer}
+  .chip.active{background:var(--yellow);border-color:var(--yellow-dark);color:var(--charcoal)}
+  .stat-pill{display:inline-flex;align-items:center;gap:4px;font-size:11px;padding:2px 8px;border-radius:20px;font-weight:500}
+  .stat-pill.approved{background:var(--success-bg);color:var(--success);border:1px solid var(--success-border)}
+  .stat-pill.denied{background:var(--danger-bg);color:var(--danger);border:1px solid var(--danger-border)}
+  .stat-pill.pending{background:var(--warn-bg);color:var(--warn);border:1px solid var(--warn-border)}
+</style>
 </head>
 <body>
 <div class="shell">
@@ -58,17 +88,49 @@
     <div id="tab-dashboard" style="display:none">
       <div class="page-header"><h2>Dashboard</h2><p>Live metrics across all submissions.</p><div class="yellow-rule"></div></div>
       <div class="metric-grid" id="dash-metrics"></div>
-      <div class="row2" style="gap:16px;margin-bottom:16px">
-        <div class="card"><div class="section-divider" style="margin-top:0">By request type</div><div id="chart-type"></div></div>
-        <div class="card"><div class="section-divider" style="margin-top:0">By affiliate code</div><div id="chart-affiliate"></div></div>
+      <div class="dash-tabs">
+        <button class="dash-tab active" onclick="showDashTab('overview',this)">Overview</button>
+        <button class="dash-tab" onclick="showDashTab('affiliates',this)">By affiliate</button>
+        <button class="dash-tab" onclick="showDashTab('time',this)">By time</button>
       </div>
-      <div class="row2" style="gap:16px;margin-bottom:16px">
-        <div class="card"><div class="section-divider" style="margin-top:0">By staff member</div><div id="chart-staff"></div></div>
-        <div class="card"><div class="section-divider" style="margin-top:0">By department</div><div id="chart-dept"></div></div>
+      <!-- Overview -->
+      <div id="dashtab-overview">
+        <div class="row2" style="gap:16px;margin-bottom:16px">
+          <div class="card"><div class="section-divider" style="margin-top:0">By request type</div><div id="chart-type"></div></div>
+          <div class="card"><div class="section-divider" style="margin-top:0">By affiliate code</div><div id="chart-affiliate"></div></div>
+        </div>
+        <div class="row2" style="gap:16px;margin-bottom:16px">
+          <div class="card"><div class="section-divider" style="margin-top:0">By staff member</div><div id="chart-staff"></div></div>
+          <div class="card"><div class="section-divider" style="margin-top:0">By department</div><div id="chart-dept"></div></div>
+        </div>
+        <div class="row2" style="gap:16px">
+          <div class="card"><div class="section-divider" style="margin-top:0">By approver</div><div id="chart-approver"></div></div>
+          <div class="card"><div class="section-divider" style="margin-top:0">Pending approval</div><div id="chart-pending"></div></div>
+        </div>
       </div>
-      <div class="row2" style="gap:16px">
-        <div class="card"><div class="section-divider" style="margin-top:0">By approver</div><div id="chart-approver"></div></div>
-        <div class="card"><div class="section-divider" style="margin-top:0">Pending</div><div id="chart-pending"></div></div>
+      <!-- Affiliate deep-dive -->
+      <div id="dashtab-affiliates" style="display:none">
+        <div class="card">
+          <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;flex-wrap:wrap">
+            <div class="section-divider" style="margin-top:0;margin-bottom:0;flex:1">Affiliate activity</div>
+            <input type="text" id="aff-search" placeholder="Search affiliate..." oninput="filterAffiliateTable()" style="width:180px;font-size:13px;padding:6px 10px"/>
+          </div>
+          <div class="filter-chips" id="aff-form-chips"></div>
+          <div style="overflow-x:auto">
+            <table class="aff-table">
+              <thead><tr><th>Affiliate</th><th>Form type</th><th>Total</th><th>Approved</th><th>Denied</th><th>Pending</th><th>Approval rate</th></tr></thead>
+              <tbody id="aff-tbody"></tbody>
+            </table>
+          </div>
+          <p id="aff-empty" style="font-size:13px;color:var(--text3);padding:16px 0;display:none">No data yet.</p>
+        </div>
+      </div>
+      <!-- Time -->
+      <div id="dashtab-time" style="display:none">
+        <div class="row2" style="gap:16px;margin-bottom:16px">
+          <div class="card"><div class="section-divider" style="margin-top:0">By year</div><div id="chart-year"></div></div>
+          <div class="card"><div class="section-divider" style="margin-top:0">Monthly trend (last 24 months)</div><div id="chart-month"></div></div>
+        </div>
       </div>
     </div>
 
@@ -161,79 +223,78 @@
 </div>
 
 <script>
-let forms = [];
-let approvers = [];
-let departments = [];
-let cfCount = 0;
+let forms=[], approvers=[], departments=[], cfCount=0, metricsCache=null, affFormFilter='';
 
 async function init() {
-  const auth = await fetch('/api/auth/admin/status').then(r => r.json());
-  if (!auth.isAdmin) { window.location.href = '/admin'; return; }
-  [forms, approvers, departments] = await Promise.all([
-    fetch('/api/forms').then(r => r.json()),
-    fetch('/api/approvers').then(r => r.json()),
-    fetch('/api/departments').then(r => r.json()),
+  const auth = await fetch('/api/auth/admin/status').then(r=>r.json());
+  if (!auth.isAdmin) { window.location.href='/admin'; return; }
+  [forms,approvers,departments] = await Promise.all([
+    fetch('/api/forms').then(r=>r.json()),
+    fetch('/api/approvers').then(r=>r.json()),
+    fetch('/api/departments').then(r=>r.json()),
   ]);
   const path = window.location.pathname;
-  if      (path.includes('submissions'))  showTab('submissions', null);
-  else if (path.includes('approvers'))    showTab('approvers', null);
-  else if (path.includes('departments'))  showTab('departments', null);
-  else if (path.includes('forms'))        showTab('forms', null);
-  else                                    showTab('dashboard', null);
+  if      (path.includes('submissions'))  showTab('submissions',null);
+  else if (path.includes('approvers'))    showTab('approvers',null);
+  else if (path.includes('departments'))  showTab('departments',null);
+  else if (path.includes('forms'))        showTab('forms',null);
+  else                                    showTab('dashboard',null);
 }
 
-function showTab(tab, btn) {
-  ['dashboard','submissions','approvers','departments','forms'].forEach(t => {
-    document.getElementById('tab-' + t).style.display = 'none';
-  });
-  document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
-  document.getElementById('tab-' + tab).style.display = 'block';
-  if (btn) btn.classList.add('active');
-  else document.querySelectorAll('.nav-item').forEach(b => {
-    if (b.textContent.toLowerCase().includes(tab.slice(0,5))) b.classList.add('active');
-  });
-  history.replaceState({}, '', '/admin/' + tab);
-  if (tab === 'dashboard')   loadDashboard();
-  if (tab === 'submissions') { populateFormFilter(); loadSubmissions(); }
-  if (tab === 'approvers')   renderApprovers();
-  if (tab === 'departments') renderDepartments();
-  if (tab === 'forms')       renderForms();
+function showTab(tab,btn) {
+  ['dashboard','submissions','approvers','departments','forms'].forEach(t=>document.getElementById('tab-'+t).style.display='none');
+  document.querySelectorAll('.nav-item').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-'+tab).style.display='block';
+  if(btn) btn.classList.add('active');
+  else document.querySelectorAll('.nav-item').forEach(b=>{if(b.textContent.toLowerCase().includes(tab.slice(0,5)))b.classList.add('active');});
+  history.replaceState({},'','/admin/'+tab);
+  if(tab==='dashboard')   loadDashboard();
+  if(tab==='submissions') {populateFormFilter();loadSubmissions();}
+  if(tab==='approvers')   renderApprovers();
+  if(tab==='departments') renderDepartments();
+  if(tab==='forms')       renderForms();
 }
 
-async function logout() {
-  await fetch('/api/auth/admin/logout', { method: 'POST' });
-  window.location.href = '/';
+function showDashTab(tab,btn) {
+  ['overview','affiliates','time'].forEach(t=>document.getElementById('dashtab-'+t).style.display='none');
+  document.querySelectorAll('.dash-tab').forEach(b=>b.classList.remove('active'));
+  document.getElementById('dashtab-'+tab).style.display='block';
+  if(btn) btn.classList.add('active');
+  if(tab==='affiliates'&&metricsCache) renderAffiliateTab(metricsCache);
+  if(tab==='time'&&metricsCache) renderTimeTab(metricsCache);
 }
 
-// ── Dashboard ─────────────────────────────────────────────────────────────────
+async function logout() { await fetch('/api/auth/admin/logout',{method:'POST'}); window.location.href='/'; }
+
 async function loadDashboard() {
-  const m = await fetch('/api/admin/metrics').then(r => r.json());
-  const rate = (m.approved+m.denied)>0 ? Math.round((m.approved/(m.approved+m.denied))*100)+'%' : '—';
-  document.getElementById('dash-metrics').innerHTML = `
-    <div class="metric-card"><div class="mc-label">Total</div><div class="mc-value">${m.total}</div><div class="mc-sub">all time</div></div>
-    <div class="metric-card"><div class="mc-label">This month</div><div class="mc-value">${m.thisMonth}</div></div>
+  const m = await fetch('/api/admin/metrics').then(r=>r.json());
+  metricsCache = m;
+  const rate = (m.approved+m.denied)>0?Math.round((m.approved/(m.approved+m.denied))*100)+'%':'—';
+  document.getElementById('dash-metrics').innerHTML=`
+    <div class="metric-card"><div class="mc-label">Total requests</div><div class="mc-value">${m.total}</div><div class="mc-sub">all time</div></div>
+    <div class="metric-card"><div class="mc-label">This month</div><div class="mc-value">${m.thisMonth}</div><div class="mc-sub">${new Date().toLocaleString('en-US',{month:'long',year:'numeric'})}</div></div>
     <div class="metric-card"><div class="mc-label">Approval rate</div><div class="mc-value">${rate}</div><div class="mc-sub">${m.approved} approved · ${m.denied} denied</div></div>
     <div class="metric-card"><div class="mc-label">Pending</div><div class="mc-value">${m.pending}</div><div class="mc-sub">awaiting decision</div></div>`;
-  renderBar('chart-type',      m.byType,      'form_name');
-  renderBar('chart-affiliate', m.byAffiliate, 'affiliate_code');
-  renderBar('chart-staff',     m.byStaff,     'requester_name');
-  renderBar('chart-dept',      m.byDept,      'department');
-  renderBar('chart-approver',  m.byApprover,  'approver_name');
-  const pending = await fetch('/api/admin/submissions?decision=PENDING').then(r => r.json());
+  renderBar('chart-type',m.byType,'form_name');
+  renderBar('chart-affiliate',m.byAffiliate,'affiliate_code');
+  renderBar('chart-staff',m.byStaff,'requester_name');
+  renderBar('chart-dept',m.byDept,'department');
+  renderBar('chart-approver',m.byApprover,'approver_name');
+  const pending = await fetch('/api/admin/submissions?decision=PENDING').then(r=>r.json());
   const el = document.getElementById('chart-pending');
-  if (!pending.length) { el.innerHTML='<p style="font-size:13px;color:var(--text3);padding:8px 0">No pending submissions.</p>'; return; }
-  el.innerHTML = pending.slice(0,8).map(s => `
+  if(!pending.length){el.innerHTML='<p style="font-size:13px;color:var(--text3);padding:8px 0">No pending submissions.</p>';return;}
+  el.innerHTML=pending.slice(0,8).map(s=>`
     <div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--border)">
       <div><div style="font-size:13px;font-weight:500">${s.requester_name}</div><div style="font-size:11px;color:var(--text3)">${s.form_name} · ${s.affiliate_code}</div></div>
       <span class="decision-badge PENDING">Pending</span>
     </div>`).join('');
 }
 
-function renderBar(id, data, labelKey) {
-  const el = document.getElementById(id);
-  if (!data||!data.length) { el.innerHTML='<p style="font-size:13px;color:var(--text3);padding:8px 0">No data yet.</p>'; return; }
-  const max = data[0].count;
-  el.innerHTML = data.slice(0,8).map(row => `
+function renderBar(id,data,labelKey) {
+  const el=document.getElementById(id);
+  if(!data||!data.length){el.innerHTML='<p style="font-size:13px;color:var(--text3);padding:8px 0">No data yet.</p>';return;}
+  const max=data[0].count;
+  el.innerHTML=data.slice(0,10).map(row=>`
     <div class="bar-row">
       <div class="bar-label" title="${row[labelKey]}">${row[labelKey]}</div>
       <div class="bar-track"><div class="bar-fill" style="width:${Math.round((row.count/max)*100)}%"></div></div>
@@ -241,31 +302,86 @@ function renderBar(id, data, labelKey) {
     </div>`).join('');
 }
 
-// ── Submissions ───────────────────────────────────────────────────────────────
+function renderAffiliateTab(m) {
+  if(!m.affiliateDetail) return;
+  const formNames=[...new Set(m.affiliateDetail.map(r=>r.form_name))].sort();
+  document.getElementById('aff-form-chips').innerHTML=
+    `<span class="chip ${!affFormFilter?'active':''}" onclick="setAffFilter('')">All forms</span>`+
+    formNames.map(n=>`<span class="chip ${affFormFilter===n?'active':''}" onclick="setAffFilter('${n}')">${n}</span>`).join('');
+  renderAffiliateTable(m);
+}
+
+function setAffFilter(name){affFormFilter=name;if(metricsCache)renderAffiliateTab(metricsCache);}
+
+function filterAffiliateTable(){if(metricsCache)renderAffiliateTable(metricsCache);}
+
+function renderAffiliateTable(m) {
+  const search=(document.getElementById('aff-search')?.value||'').toLowerCase();
+  let data=m.affiliateDetail||[];
+  if(affFormFilter) data=data.filter(r=>r.form_name===affFormFilter);
+  if(search) data=data.filter(r=>r.affiliate_code.toLowerCase().includes(search));
+  const tbody=document.getElementById('aff-tbody');
+  const empty=document.getElementById('aff-empty');
+  if(!data.length){tbody.innerHTML='';empty.style.display='block';return;}
+  empty.style.display='none';
+  tbody.innerHTML=data.map(r=>{
+    const rate=(r.approved+r.denied)>0?Math.round((r.approved/(r.approved+r.denied))*100)+'%':'—';
+    return `<tr>
+      <td><span class="aff-code">${r.affiliate_code}</span></td>
+      <td><span class="log-badge">${r.form_name}</span></td>
+      <td style="font-weight:500">${r.count}</td>
+      <td><span class="stat-pill approved">${r.approved}</span></td>
+      <td><span class="stat-pill denied">${r.denied}</span></td>
+      <td><span class="stat-pill pending">${r.pending}</span></td>
+      <td style="font-weight:500">${rate}</td>
+    </tr>`;
+  }).join('');
+}
+
+function renderTimeTab(m) {
+  const yearEl=document.getElementById('chart-year');
+  if(!m.byYear||!m.byYear.length){yearEl.innerHTML='<p style="font-size:13px;color:var(--text3)">No data yet.</p>';}
+  else {
+    const maxY=Math.max(...m.byYear.map(r=>r.count));
+    yearEl.innerHTML=m.byYear.map(r=>`
+      <div class="year-row">
+        <div class="year-label">${r.year}</div>
+        <div class="year-track"><div class="year-fill" style="width:${Math.round((r.count/maxY)*100)}%"></div></div>
+        <div class="year-count">${r.count}</div>
+      </div>`).join('');
+  }
+  const monthEl=document.getElementById('chart-month');
+  if(!m.byMonth||!m.byMonth.length){monthEl.innerHTML='<p style="font-size:13px;color:var(--text3)">No data yet.</p>';}
+  else {
+    const maxM=Math.max(...m.byMonth.map(r=>r.count));
+    monthEl.innerHTML='<div class="month-grid">'+m.byMonth.map(r=>{
+      const[yr,mo]=r.month.split('-');
+      const label=new Date(parseInt(yr),parseInt(mo)-1,1).toLocaleString('en-US',{month:'short',year:'2-digit'});
+      return `<div class="month-cell"><div class="mc-month">${label}</div><div class="mc-count">${r.count}</div><div class="mc-bar" style="width:${Math.round((r.count/maxM)*100)}%"></div></div>`;
+    }).join('')+'</div>';
+  }
+}
+
 function populateFormFilter() {
-  const sel = document.getElementById('filter-form');
-  const existing = Array.from(sel.options).map(o => o.value);
-  forms.forEach(f => {
-    if (!existing.includes(f.id)) {
-      const o = document.createElement('option'); o.value=f.id; o.textContent=f.name; sel.appendChild(o);
-    }
-  });
+  const sel=document.getElementById('filter-form');
+  const existing=Array.from(sel.options).map(o=>o.value);
+  forms.forEach(f=>{if(!existing.includes(f.id)){const o=document.createElement('option');o.value=f.id;o.textContent=f.name;sel.appendChild(o);}});
 }
 
 async function loadSubmissions() {
-  const params = new URLSearchParams();
-  const formId   = document.getElementById('filter-form').value;
-  const decision = document.getElementById('filter-decision').value;
-  const search   = document.getElementById('filter-search').value;
-  if (formId)   params.set('formId', formId);
-  if (decision) params.set('decision', decision);
-  if (search)   params.set('search', search);
-  const subs = await fetch('/api/admin/submissions?' + params).then(r => r.json());
-  const tbody = document.getElementById('sub-tbody');
-  const empty = document.getElementById('sub-empty');
-  if (!subs.length) { tbody.innerHTML=''; empty.style.display='block'; return; }
-  empty.style.display = 'none';
-  tbody.innerHTML = subs.map(s => `
+  const params=new URLSearchParams();
+  const formId=document.getElementById('filter-form').value;
+  const decision=document.getElementById('filter-decision').value;
+  const search=document.getElementById('filter-search').value;
+  if(formId)params.set('formId',formId);
+  if(decision)params.set('decision',decision);
+  if(search)params.set('search',search);
+  const subs=await fetch('/api/admin/submissions?'+params).then(r=>r.json());
+  const tbody=document.getElementById('sub-tbody');
+  const empty=document.getElementById('sub-empty');
+  if(!subs.length){tbody.innerHTML='';empty.style.display='block';return;}
+  empty.style.display='none';
+  tbody.innerHTML=subs.map(s=>`
     <tr>
       <td style="white-space:nowrap">${new Date(s.submitted_at).toLocaleString('en-US',{dateStyle:'short',timeStyle:'short'})}</td>
       <td><span class="log-badge">${s.form_name}</span></td>
@@ -277,117 +393,98 @@ async function loadSubmissions() {
     </tr>`).join('');
 }
 
-// ── Approvers ─────────────────────────────────────────────────────────────────
 function renderApprovers() {
-  const el = document.getElementById('approvers-list');
-  if (!approvers.length) {
-    el.innerHTML = '<p style="font-size:13px;color:var(--text3);padding:8px 0">No approvers configured yet.</p>';
-  } else {
-    el.innerHTML = approvers.map(a => {
-      const assignedForms = a.form_ids.map(id => forms.find(f=>f.id===id)?.name).filter(Boolean).join(', ') || 'None assigned';
+  const el=document.getElementById('approvers-list');
+  if(!approvers.length){el.innerHTML='<p style="font-size:13px;color:var(--text3);padding:8px 0">No approvers configured yet.</p>';}
+  else {
+    el.innerHTML=approvers.map(a=>{
+      const assignedForms=a.form_ids.map(id=>forms.find(f=>f.id===id)?.name).filter(Boolean).join(', ')||'None assigned';
       return `<div class="manage-row" id="approver-row-${a.id}">
-        <div class="manage-info">
-          <div class="mn">${a.username}</div>
-          <div class="ms" id="approver-forms-${a.id}">${assignedForms}</div>
-        </div>
+        <div class="manage-info"><div class="mn">${a.username}</div><div class="ms" id="approver-forms-${a.id}">${assignedForms}</div></div>
         <button class="btn btn-sm" onclick="editApproverForms('${a.id}')">Edit forms</button>
         <button class="btn btn-sm" onclick="resetApproverPin('${a.id}','${a.username}')">Reset PIN</button>
         <button class="btn btn-sm btn-danger" onclick="deleteApprover('${a.id}','${a.username}')">Remove</button>
       </div>`;
     }).join('');
   }
-  document.getElementById('ap-form-checkboxes').innerHTML = forms.map(f => `
+  document.getElementById('ap-form-checkboxes').innerHTML=forms.map(f=>`
     <label style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:400;color:var(--text);cursor:pointer">
       <input type="checkbox" value="${f.id}" style="width:auto"/> ${f.name}
     </label>`).join('');
 }
 
 function editApproverForms(id) {
-  const approver = approvers.find(a => a.id === id);
-  if (!approver) return;
-  const row = document.getElementById('approver-row-' + id);
-  const existing = document.getElementById('edit-forms-' + id);
-  if (existing) { existing.remove(); return; }
-
-  const panel = document.createElement('div');
-  panel.id = 'edit-forms-' + id;
-  panel.style.cssText = 'grid-column:1/-1;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px;margin-top:8px';
-  panel.innerHTML = `
+  const approver=approvers.find(a=>a.id===id);if(!approver)return;
+  const row=document.getElementById('approver-row-'+id);
+  const existing=document.getElementById('edit-forms-'+id);
+  if(existing){existing.remove();return;}
+  const panel=document.createElement('div');
+  panel.id='edit-forms-'+id;
+  panel.style.cssText='grid-column:1/-1;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px;margin-top:8px';
+  panel.innerHTML=`
     <p style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.06em">Assigned forms for ${approver.username}</p>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
-      ${forms.map(f => `
-        <label style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:400;color:var(--text);cursor:pointer">
-          <input type="checkbox" value="${f.id}" ${approver.form_ids.includes(f.id) ? 'checked' : ''} style="width:auto"/> ${f.name}
-        </label>`).join('')}
+      ${forms.map(f=>`<label style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:400;color:var(--text);cursor:pointer"><input type="checkbox" value="${f.id}" ${approver.form_ids.includes(f.id)?'checked':''} style="width:auto"/> ${f.name}</label>`).join('')}
     </div>
     <div style="display:flex;gap:8px">
       <button class="btn btn-yellow btn-sm" onclick="saveApproverForms('${id}')">Save</button>
       <button class="btn btn-sm" onclick="document.getElementById('edit-forms-${id}').remove()">Cancel</button>
     </div>
     <div id="edit-forms-msg-${id}"></div>`;
-
-  row.insertAdjacentElement('afterend', panel);
+  row.insertAdjacentElement('afterend',panel);
 }
 
 async function saveApproverForms(id) {
-  const formIds = Array.from(document.querySelectorAll(`#edit-forms-${id} input:checked`)).map(cb => cb.value);
-  const msg = document.getElementById('edit-forms-msg-' + id);
-  if (!formIds.length) { msg.innerHTML='<div class="alert alert-danger" style="margin-top:8px">Assign at least one form type.</div>'; return; }
-  const res = await fetch(`/api/approvers/${id}/forms`, {
-    method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ formIds })
-  });
-  if (!res.ok) { msg.innerHTML='<div class="alert alert-danger" style="margin-top:8px">Failed to save.</div>'; return; }
-  approvers = await fetch('/api/approvers').then(r => r.json());
-  const updated = approvers.find(a => a.id === id);
-  const assignedForms = updated.form_ids.map(fid => forms.find(f=>f.id===fid)?.name).filter(Boolean).join(', ') || 'None assigned';
-  document.getElementById('approver-forms-' + id).textContent = assignedForms;
-  document.getElementById('edit-forms-' + id).remove();
+  const formIds=Array.from(document.querySelectorAll(`#edit-forms-${id} input:checked`)).map(cb=>cb.value);
+  const msg=document.getElementById('edit-forms-msg-'+id);
+  if(!formIds.length){msg.innerHTML='<div class="alert alert-danger" style="margin-top:8px">Assign at least one form type.</div>';return;}
+  const res=await fetch(`/api/approvers/${id}/forms`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({formIds})});
+  if(!res.ok){msg.innerHTML='<div class="alert alert-danger" style="margin-top:8px">Failed to save.</div>';return;}
+  approvers=await fetch('/api/approvers').then(r=>r.json());
+  const updated=approvers.find(a=>a.id===id);
+  document.getElementById('approver-forms-'+id).textContent=updated.form_ids.map(fid=>forms.find(f=>f.id===fid)?.name).filter(Boolean).join(', ')||'None assigned';
+  document.getElementById('edit-forms-'+id).remove();
 }
 
 async function createApprover() {
-  const username = document.getElementById('ap-username').value.trim();
-  const pin      = document.getElementById('ap-pin').value;
-  const formIds  = Array.from(document.querySelectorAll('#ap-form-checkboxes input:checked')).map(cb => cb.value);
-  const msg      = document.getElementById('ap-msg');
-  if (!username || !pin) { msg.innerHTML='<div class="alert alert-danger">Username and PIN are required.</div>'; return; }
-  if (!formIds.length)   { msg.innerHTML='<div class="alert alert-danger">Assign at least one form type.</div>'; return; }
-  const res = await fetch('/api/approvers', {
-    method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({username,pin,formIds})
-  });
-  const data = await res.json();
-  if (!res.ok) { msg.innerHTML=`<div class="alert alert-danger">${data.error}</div>`; return; }
+  const username=document.getElementById('ap-username').value.trim();
+  const pin=document.getElementById('ap-pin').value;
+  const formIds=Array.from(document.querySelectorAll('#ap-form-checkboxes input:checked')).map(cb=>cb.value);
+  const msg=document.getElementById('ap-msg');
+  if(!username||!pin){msg.innerHTML='<div class="alert alert-danger">Username and PIN are required.</div>';return;}
+  if(!formIds.length){msg.innerHTML='<div class="alert alert-danger">Assign at least one form type.</div>';return;}
+  const res=await fetch('/api/approvers',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username,pin,formIds})});
+  const data=await res.json();
+  if(!res.ok){msg.innerHTML=`<div class="alert alert-danger">${data.error}</div>`;return;}
   document.getElementById('ap-username').value='';
   document.getElementById('ap-pin').value='';
   document.querySelectorAll('#ap-form-checkboxes input').forEach(cb=>cb.checked=false);
-  approvers = await fetch('/api/approvers').then(r=>r.json());
+  approvers=await fetch('/api/approvers').then(r=>r.json());
   renderApprovers();
   msg.innerHTML=`<div class="alert alert-success">Approver "${username}" added.</div>`;
   setTimeout(()=>msg.innerHTML='',3000);
 }
 
-async function resetApproverPin(id, username) {
-  const newPin = prompt(`Enter new PIN for ${username} (min 4 characters):`);
-  if (!newPin) return;
-  if (newPin.length < 4) { alert('PIN must be at least 4 characters.'); return; }
-  const res = await fetch(`/api/approvers/${id}/reset-pin`, {
-    method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({newPin})
-  });
-  if (res.ok) alert(`PIN reset for ${username}.`);
-  else { const d=await res.json(); alert(d.error||'Failed to reset PIN.'); }
+async function resetApproverPin(id,username) {
+  const newPin=prompt(`Enter new PIN for ${username} (min 4 characters):`);
+  if(!newPin)return;
+  if(newPin.length<4){alert('PIN must be at least 4 characters.');return;}
+  const res=await fetch(`/api/approvers/${id}/reset-pin`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({newPin})});
+  if(res.ok)alert(`PIN reset for ${username}.`);
+  else{const d=await res.json();alert(d.error||'Failed.');}
 }
 
-async function deleteApprover(id, username) {
-  if (!confirm(`Remove approver "${username}"? This cannot be undone.`)) return;
-  await fetch(`/api/approvers/${id}`, {method:'DELETE'});
-  approvers = await fetch('/api/approvers').then(r=>r.json());
+async function deleteApprover(id,username) {
+  if(!confirm(`Remove approver "${username}"?`))return;
+  await fetch(`/api/approvers/${id}`,{method:'DELETE'});
+  approvers=await fetch('/api/approvers').then(r=>r.json());
   renderApprovers();
 }
 
-// ── Departments ───────────────────────────────────────────────────────────────
 function renderDepartments() {
-  const el = document.getElementById('dept-list');
-  if (!departments.length) { el.innerHTML='<p style="font-size:13px;color:var(--text3)">No departments yet.</p>'; return; }
-  el.innerHTML = departments.map(d => `
+  const el=document.getElementById('dept-list');
+  if(!departments.length){el.innerHTML='<p style="font-size:13px;color:var(--text3)">No departments yet.</p>';return;}
+  el.innerHTML=departments.map(d=>`
     <div class="manage-row">
       <div class="manage-info"><div class="mn">${d.name}</div></div>
       <button class="btn btn-sm btn-danger" onclick="deleteDepartment(${d.id},'${d.name}')">Remove</button>
@@ -395,31 +492,28 @@ function renderDepartments() {
 }
 
 async function addDepartment() {
-  const name = document.getElementById('dept-new').value.trim();
-  const msg  = document.getElementById('dept-msg');
-  if (!name) return;
-  const res = await fetch('/api/departments', {
-    method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({name})
-  });
-  const data = await res.json();
-  if (!res.ok) { msg.innerHTML=`<div class="alert alert-danger">${data.error}</div>`; return; }
+  const name=document.getElementById('dept-new').value.trim();
+  const msg=document.getElementById('dept-msg');
+  if(!name)return;
+  const res=await fetch('/api/departments',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name})});
+  const data=await res.json();
+  if(!res.ok){msg.innerHTML=`<div class="alert alert-danger">${data.error}</div>`;return;}
   document.getElementById('dept-new').value='';
-  departments = await fetch('/api/departments').then(r=>r.json());
+  departments=await fetch('/api/departments').then(r=>r.json());
   renderDepartments();
   msg.innerHTML=`<div class="alert alert-success">"${name}" added.</div>`;
   setTimeout(()=>msg.innerHTML='',2500);
 }
 
-async function deleteDepartment(id, name) {
-  if (!confirm(`Remove department "${name}"?`)) return;
-  await fetch(`/api/departments/${id}`, {method:'DELETE'});
-  departments = await fetch('/api/departments').then(r=>r.json());
+async function deleteDepartment(id,name) {
+  if(!confirm(`Remove department "${name}"?`))return;
+  await fetch(`/api/departments/${id}`,{method:'DELETE'});
+  departments=await fetch('/api/departments').then(r=>r.json());
   renderDepartments();
 }
 
-// ── Forms ─────────────────────────────────────────────────────────────────────
 function renderForms() {
-  document.getElementById('forms-list').innerHTML = forms.map(f => `
+  document.getElementById('forms-list').innerHTML=forms.map(f=>`
     <div class="manage-row">
       <div class="manage-info">
         <div class="mn">${f.name}</div>
@@ -431,37 +525,37 @@ function renderForms() {
 }
 
 async function deleteForm(id) {
-  if (!confirm('Delete this form?')) return;
+  if(!confirm('Delete this form?'))return;
   await fetch(`/api/forms/${id}`,{method:'DELETE'});
-  forms = await fetch('/api/forms').then(r=>r.json());
+  forms=await fetch('/api/forms').then(r=>r.json());
   renderForms();
 }
 
 function addField() {
-  const list = document.getElementById('cf-list');
-  const ph = list.querySelector('p'); if(ph) ph.remove();
-  const i = cfCount++;
-  const row = document.createElement('div'); row.className='cf-row'; row.id='cf-row-'+i;
+  const list=document.getElementById('cf-list');
+  const ph=list.querySelector('p');if(ph)ph.remove();
+  const i=cfCount++;
+  const row=document.createElement('div');row.className='cf-row';row.id='cf-row-'+i;
   row.innerHTML=`<input type="text" id="cf-lbl-${i}" placeholder="Field label"/><select id="cf-type-${i}"><option value="text">Text</option><option value="number">Number</option><option value="textarea">Textarea</option></select><select id="cf-req-${i}"><option value="1">Required</option><option value="0">Optional</option></select><button class="btn btn-sm btn-danger" onclick="document.getElementById('cf-row-${i}').remove()">✕</button>`;
   list.appendChild(row);
 }
 
 async function createForm() {
-  const name = document.getElementById('nf-name').value.trim();
-  const msg  = document.getElementById('nf-msg');
-  if (!name) { msg.innerHTML='<div class="alert alert-danger">Form name is required.</div>'; return; }
-  const fields = [];
-  for (let i=0; i<cfCount; i++) {
-    const row = document.getElementById('cf-row-'+i); if(!row) continue;
-    const label = document.getElementById('cf-lbl-'+i).value.trim(); if(!label) continue;
-    fields.push({id:'c'+i, label, type:document.getElementById('cf-type-'+i).value, required:document.getElementById('cf-req-'+i).value==='1'});
+  const name=document.getElementById('nf-name').value.trim();
+  const msg=document.getElementById('nf-msg');
+  if(!name){msg.innerHTML='<div class="alert alert-danger">Form name is required.</div>';return;}
+  const fields=[];
+  for(let i=0;i<cfCount;i++){
+    const row=document.getElementById('cf-row-'+i);if(!row)continue;
+    const label=document.getElementById('cf-lbl-'+i).value.trim();if(!label)continue;
+    fields.push({id:'c'+i,label,type:document.getElementById('cf-type-'+i).value,required:document.getElementById('cf-req-'+i).value==='1'});
   }
-  const res = await fetch('/api/forms', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({name,fields})});
-  if (!res.ok) { msg.innerHTML='<div class="alert alert-danger">Failed to save form.</div>'; return; }
-  forms = await fetch('/api/forms').then(r=>r.json());
+  const res=await fetch('/api/forms',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,fields})});
+  if(!res.ok){msg.innerHTML='<div class="alert alert-danger">Failed to save form.</div>';return;}
+  forms=await fetch('/api/forms').then(r=>r.json());
   document.getElementById('nf-name').value='';
   document.getElementById('cf-list').innerHTML='';
-  cfCount=0; renderForms();
+  cfCount=0;renderForms();
   msg.innerHTML=`<div class="alert alert-success">Form "${name}" saved.</div>`;
   setTimeout(()=>msg.innerHTML='',3000);
 }
