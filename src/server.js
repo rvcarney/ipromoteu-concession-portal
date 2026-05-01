@@ -4,11 +4,9 @@ const session      = require('express-session');
 const { v4: uuid } = require('uuid');
 const path         = require('path');
 const db           = require('./db');
-const email        = require('./email');
 
 const app  = express();
 const PORT = process.env.PORT || 3000;
-const BASE = (process.env.BASE_URL || `http://localhost:${PORT}`).replace(/\/$/, '');
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -20,7 +18,6 @@ app.use(session({
   cookie:            { secure: false, maxAge: 8 * 60 * 60 * 1000 }
 }));
 
-// ── Auth middleware ───────────────────────────────────────────────────────────
 function requireAdmin(req, res, next) {
   if (req.session.isAdmin) return next();
   res.redirect('/admin/login');
@@ -39,10 +36,6 @@ app.get('/admin/dashboard',   requireAdmin, (req, res) => sendPage(res, 'admin')
 app.get('/admin/submissions', requireAdmin, (req, res) => sendPage(res, 'admin'));
 app.get('/admin/settings',    requireAdmin, (req, res) => sendPage(res, 'admin'));
 app.get('/admin/forms',       requireAdmin, (req, res) => sendPage(res, 'admin'));
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// API
-// ═══════════════════════════════════════════════════════════════════════════════
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
 app.post('/api/auth/login', (req, res) => {
@@ -68,16 +61,11 @@ app.get('/api/auth/status', (req, res) => {
 app.get('/api/forms', (req, res) => res.json(db.getForms()));
 
 app.post('/api/forms', requireAdmin, (req, res) => {
-  const { name, recipientEmail, fields } = req.body;
+  const { name, fields } = req.body;
   if (!name) return res.status(400).json({ error: 'Form name is required' });
   const id = 'custom-' + Date.now();
-  db.createForm(id, name, recipientEmail || '', fields || []);
+  db.createForm(id, name, '', fields || []);
   res.json({ ok: true, id });
-});
-
-app.patch('/api/forms/:id/email', requireAdmin, (req, res) => {
-  db.updateFormEmail(req.params.id, req.body.email || '');
-  res.json({ ok: true });
 });
 
 app.delete('/api/forms/:id', requireAdmin, (req, res) => {
@@ -85,23 +73,8 @@ app.delete('/api/forms/:id', requireAdmin, (req, res) => {
   res.json({ ok: true });
 });
 
-// ── Settings ──────────────────────────────────────────────────────────────────
-app.get('/api/settings', requireAdmin, (req, res) => {
-  res.json({ smtpStatus: !!process.env.SMTP_USER });
-});
-
-// ── Test SMTP ─────────────────────────────────────────────────────────────────
-app.get('/api/admin/test-email', requireAdmin, async (req, res) => {
-  try {
-    await email.testConnection();
-    res.json({ ok: true });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
 // ── Submit a concession request ───────────────────────────────────────────────
-app.post('/api/submissions', async (req, res) => {
+app.post('/api/submissions', (req, res) => {
   const { formId, name, email: reqEmail, department, affiliateCode, fields, notes } = req.body;
 
   if (!formId || !name || !reqEmail || !department || !affiliateCode) {
@@ -110,9 +83,6 @@ app.post('/api/submissions', async (req, res) => {
 
   const form = db.getForm(formId);
   if (!form) return res.status(404).json({ error: 'Form not found' });
-  if (!form.recipient_email) {
-    return res.status(400).json({ error: 'This form has no approver configured. Please ask your admin to set one up in Email routing.' });
-  }
 
   for (const f of form.fields) {
     if (f.required && !fields?.[f.id]?.value?.trim()) {
@@ -123,7 +93,7 @@ app.post('/api/submissions', async (req, res) => {
   const id    = uuid();
   const token = uuid();
 
-  const submission = {
+  db.createSubmission({
     id,
     form_id:         formId,
     form_name:       form.name,
@@ -134,20 +104,9 @@ app.post('/api/submissions', async (req, res) => {
     fields_json:     JSON.stringify(fields || {}),
     notes:           notes || '',
     decision_token:  token,
-  };
+  });
 
-  db.createSubmission(submission);
-  const saved = db.getSubmissionById(id);
-
-  // Send notification email to approver
-  try {
-    await email.sendSubmissionToApprover({ submission: saved, form });
-  } catch (err) {
-    console.error('Approver email failed:', err.message);
-    return res.json({ ok: true, id, emailWarning: 'Request saved but notification email failed. Check SMTP settings in Render environment variables.' });
-  }
-
-  res.json({ ok: true, id });
+  res.json({ ok: true, id, token });
 });
 
 // ── Get submission by token (review page) ─────────────────────────────────────
@@ -159,8 +118,8 @@ app.get('/api/review/:token', (req, res) => {
 });
 
 // ── Submit decision ───────────────────────────────────────────────────────────
-app.post('/api/review/:token/decide', async (req, res) => {
-  const { decision, approverName, approverEmail, approverNotes } = req.body;
+app.post('/api/review/:token/decide', (req, res) => {
+  const { decision, approverName, approverNotes } = req.body;
   const token = req.params.token;
 
   if (!['APPROVED', 'DENIED'].includes(decision)) {
@@ -179,16 +138,7 @@ app.post('/api/review/:token/decide', async (req, res) => {
     return res.status(409).json({ error: 'This request has already been decided', decision: existing.decision });
   }
 
-  db.updateDecision(token, decision, approverName.trim(), approverEmail || '', approverNotes || '');
-  const updated = db.getSubmissionByToken(token);
-
-  // Notify requester
-  try {
-    await email.sendDecisionToRequester({ submission: updated });
-  } catch (err) {
-    console.error('Decision email failed:', err.message);
-  }
-
+  db.updateDecision(token, decision, approverName.trim(), '', approverNotes || '');
   res.json({ ok: true, decision });
 });
 
@@ -225,6 +175,4 @@ app.get('/api/admin/export', requireAdmin, (req, res) => {
 // ── Start ─────────────────────────────────────────────────────────────────────
 app.listen(PORT, () => {
   console.log(`iPROMOTEu Concession Portal running on port ${PORT}`);
-  console.log(`Base URL: ${BASE}`);
-  console.log(`SMTP configured: ${!!process.env.SMTP_USER}`);
 });
